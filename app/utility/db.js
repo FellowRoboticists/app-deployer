@@ -1,10 +1,12 @@
 'use strict'
+/* global appDeployConfig */
 
 module.exports = (function () {
   const sqlite3 = require('sqlite3')
+  const path = require('path')
   const winston = require('winston')
 
-  const dbFile = '/tmp/app-deployer'
+  const dbFile = path.join(appDeployConfig.environment.dbPath, 'app-deployer')
 
   // The DB connection
   const db = {

@@ -7,10 +7,12 @@ const bodyParser = require('body-parser')
 const path = require('path')
 const logging = require('./logging')
 
-const db = require('./app/utility/db')
-
 // Just the base-level logging
 logging.baseLogging()
+
+require('./bootstrap')
+
+const db = require('./app/utility/db')
 
 db.prepDB()
   .then(() => winston.log('info', 'db prepped'))
@@ -25,7 +27,7 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 logging.expressLogging(app)
 
-app.use('/deploy', require('./app/deploy/deploy-controller'))
+app.use('/deploys', require('./app/deploy/deploy-controller'))
 app.use('/applications', require('./app/application/application-controller'))
 
 // catch 404 and forward to error handler
