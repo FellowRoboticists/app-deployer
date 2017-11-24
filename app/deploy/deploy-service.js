@@ -3,7 +3,7 @@
 /* global appDeployConfig */
 
 module.exports = (function () {
-  const dBase = require('../utility/db')
+  const dbConn = require('../utility/db').conn()
   const path = require('path')
   const fs = require('fs-extra')
 
@@ -38,13 +38,13 @@ module.exports = (function () {
 
   const registerRelease = (tarballName, deployParams) => {
     return new Promise((resolve, reject) => {
-      dBase.db.connection.run(insertReleaseSQL, deployParams.application_id, deployParams.version, tarballName, (err) => {
+      dbConn.run(insertReleaseSQL, deployParams.application_id, deployParams.version, tarballName, (err) => {
         if (err) return reject(err)
-        dBase.db.connection.all(selectReleaseSQL, deployParams.application_id, (err, rows) => {
+        dbConn.all(selectReleaseSQL, deployParams.application_id, (err, rows) => {
           if (err) return reject(err)
           let release = rows[0]
-          dBase.db.connection.serialize(() => {
-            let deploymentSQL = dBase.db.connection.prepare(insertDeploymentSQL)
+          dbConn.serialize(() => {
+            let deploymentSQL = dbConn.prepare(insertDeploymentSQL)
             if (deployParams.role instanceof Array) {
               for (let rid of deployParams.role) {
                 deploymentSQL.run(release.id, rid, deployParams.deploy_at)

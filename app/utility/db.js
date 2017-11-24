@@ -60,7 +60,12 @@ module.exports = (function () {
     })
   }
 
+  const conn = () => {
+    return db.connection
+  }
+
   var mod = {
+    conn: conn,
     prepDB: prepDB,
     db: db
   }

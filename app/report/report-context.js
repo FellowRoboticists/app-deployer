@@ -1,7 +1,7 @@
 'use strict'
 
 module.exports = (function () {
-  const dBase = require('../utility/db')
+  const dbConn = require('../utility/db').conn()
 
   const baseReleaseReport = `
   SELECT
@@ -30,7 +30,7 @@ module.exports = (function () {
   const getApplicationReport = (application) => {
     return new Promise((resolve, reject) => {
       let sql = baseReleaseReport + ' WHERE app.rowid = ?'
-      dBase.db.connection.all(sql, application.id, (err, rows) => {
+      dbConn.all(sql, application.id, (err, rows) => {
         if (err) return reject(err)
         resolve(rows)
       })
@@ -40,7 +40,7 @@ module.exports = (function () {
   const getRoleReport = (role) => {
     return new Promise((resolve, reject) => {
       let sql = baseReleaseReport + ' WHERE rol.rowid = ?'
-      dBase.db.connection.all(sql, role.id, (err, rows) => {
+      dbConn.all(sql, role.id, (err, rows) => {
         if (err) return reject(err)
         resolve(rows)
       })

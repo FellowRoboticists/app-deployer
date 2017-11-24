@@ -1,14 +1,14 @@
 'use strict'
 
 module.exports = (function () {
-  const dBase = require('../utility/db')
+  const dbConn = require('../utility/db').conn()
   const winston = require('winston')
 
   const createApplication = (applicationParams) => {
     return new Promise((resolve, reject) => {
-      dBase.db.connection.run('INSERT INTO applications (name) VALUES (?)', applicationParams.name, (err) => {
+      dbConn.run('INSERT INTO applications (name) VALUES (?)', applicationParams.name, (err) => {
         if (err) return reject(err)
-        dBase.db.connection.all('SELECT rowid AS id, name FROM applications ORDER BY rowid DESC LIMIT 1', (err, rows) => {
+        dbConn.all('SELECT rowid AS id, name FROM applications ORDER BY rowid DESC LIMIT 1', (err, rows) => {
           if (err) return reject(err)
           resolve(rows[0])
         })
@@ -18,9 +18,9 @@ module.exports = (function () {
 
   const deleteApplication = (application) => {
     return new Promise((resolve, reject) => {
-      dBase.db.connection.run('DELETE FROM roles WHERE application_id = ?', application.id, (err) => {
+      dbConn.run('DELETE FROM roles WHERE application_id = ?', application.id, (err) => {
         if (err) return reject(err)
-        dBase.db.connection.run('DELETE FROM applications WHERE rowid = ?', application.id, (err) => {
+        dbConn.run('DELETE FROM applications WHERE rowid = ?', application.id, (err) => {
           if (err) return reject(err)
           resolve(application)
         })
@@ -30,7 +30,7 @@ module.exports = (function () {
 
   const getApplications = () => {
     return new Promise((resolve, reject) => {
-      dBase.db.connection.all('SELECT rowid as id, name FROM applications', (err, rows) => {
+      dbConn.all('SELECT rowid as id, name FROM applications', (err, rows) => {
         if (err) {
           winston.log('error', err.stack || err)
           return reject(err)
@@ -42,9 +42,9 @@ module.exports = (function () {
 
   const updateApplication = (application, params) => {
     return new Promise((resolve, reject) => {
-      dBase.db.connection.run('UPDATE applications SET name = ? WHERE rowid = ?', params.name, application.id, (err) => {
+      dbConn.run('UPDATE applications SET name = ? WHERE rowid = ?', params.name, application.id, (err) => {
         if (err) return reject(err)
-        dBase.db.connection.all('SELECT rowid AS id, name FROM applications WHERE rowid = ?', application.id, (err, rows) => {
+        dbConn.all('SELECT rowid AS id, name FROM applications WHERE rowid = ?', application.id, (err, rows) => {
           if (err) return reject(err)
           resolve(rows[0])
         })
@@ -54,7 +54,7 @@ module.exports = (function () {
 
   const getApplicationRoles = (application) => {
     return new Promise((resolve, reject) => {
-      dBase.db.connection.all('SELECT rowid AS id, application_id, role, active_server FROM roles WHERE application_id = ?', application.id, (err, rows) => {
+      dbConn.all('SELECT rowid AS id, application_id, role, active_server FROM roles WHERE application_id = ?', application.id, (err, rows) => {
         if (err) return reject(err)
         resolve(rows)
       })
@@ -63,9 +63,9 @@ module.exports = (function () {
 
   const createApplicationRole = (application, roleParams) => {
     return new Promise((resolve, reject) => {
-      dBase.db.connection.run('INSERT INTO roles (application_id, role, active_server) VALUES (?, ?, ?)', application.id, roleParams.role, roleParams.active_server, (err) => {
+      dbConn.run('INSERT INTO roles (application_id, role, active_server) VALUES (?, ?, ?)', application.id, roleParams.role, roleParams.active_server, (err) => {
         if (err) return reject(err)
-        dBase.db.connection.all('SELECT rowid AS id, application_id, role, active_server FROM roles WHERE application_id = ? ORDER BY rowid DESC LIMIT 1', application.id, (err, rows) => {
+        dbConn.all('SELECT rowid AS id, application_id, role, active_server FROM roles WHERE application_id = ? ORDER BY rowid DESC LIMIT 1', application.id, (err, rows) => {
           if (err) return reject(err)
           resolve(rows[0])
         })
@@ -75,9 +75,9 @@ module.exports = (function () {
 
   const updateApplicationRole = (application, role, roleParams) => {
     return new Promise((resolve, reject) => {
-      dBase.db.connection.run('UPDATE roles SET application_id = ?, role = ?, active_server = ? WHERE rowid = ?', application.id, roleParams.role, roleParams.active_server, role.id, (err) => {
+      dbConn.run('UPDATE roles SET application_id = ?, role = ?, active_server = ? WHERE rowid = ?', application.id, roleParams.role, roleParams.active_server, role.id, (err) => {
         if (err) return reject(err)
-        dBase.db.connection.all('SELECT rowid AS id, application_id, role, active_server FROM roles WHERE rowid = ?', role.id, (err, rows) => {
+        dbConn.all('SELECT rowid AS id, application_id, role, active_server FROM roles WHERE rowid = ?', role.id, (err, rows) => {
           if (err) return reject(err)
           resolve(rows[0])
         })
@@ -87,7 +87,7 @@ module.exports = (function () {
 
   const deleteApplicationRole = (role) => {
     return new Promise((resolve, reject) => {
-      dBase.db.connection.run('DELETE FROM roles WHERE rowid = ?', role.id, (err) => {
+      dbConn.run('DELETE FROM roles WHERE rowid = ?', role.id, (err) => {
         if (err) return reject(err)
         resolve(role)
       })

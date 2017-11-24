@@ -1,7 +1,7 @@
 'use strict'
 
 module.exports = (function () {
-  const dBase = require('../utility/db')
+  const dbConn = require('../utility/db').conn()
 
   const appSelectSQL = `
   SELECT 
@@ -22,7 +22,7 @@ module.exports = (function () {
     rowid = ?`
 
   const applicationIdParam = function __applicationIdParam (req, res, next, id) {
-    dBase.db.connection.all(appSelectSQL, id, (err, rows) => {
+    dbConn.all(appSelectSQL, id, (err, rows) => {
       if (err) return next(err)
       req.application = rows[0]
       next()
@@ -37,7 +37,7 @@ module.exports = (function () {
       params.push(req.application.id)
     }
 
-    dBase.db.connection.all(sql, ...params, (err, rows) => {
+    dbConn.all(sql, ...params, (err, rows) => {
       if (err) return next(err)
       req.role = rows[0]
       next()
