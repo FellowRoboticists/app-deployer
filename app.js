@@ -29,6 +29,7 @@ logging.expressLogging(app)
 
 app.use('/deploys', require('./app/deploy/deploy-controller'))
 app.use('/applications', require('./app/application/application-controller'))
+app.use('/reports', require('./app/report/report-controller'))
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
