@@ -1,51 +1,56 @@
 'use strict'
 
 module.exports = (function () {
-  const dbConn = require('../utility/db').conn()
-
-  const appSelectSQL = `
-  SELECT 
-    rowid AS id, 
-    name 
-  FROM 
-    applications WHERE rowid = ?`
-
-  const roleSelectSQL = `
-  SELECT 
-    rowid AS id, 
-    application_id, 
-    role, 
-    active_server 
-  FROM 
-    roles 
-  WHERE 
-    rowid = ?`
+  const sqlSVC = require('../sql/sql-service')
 
   const applicationIdParam = function __applicationIdParam (req, res, next, id) {
-    dbConn.all(appSelectSQL, id, (err, rows) => {
-      if (err) return next(err)
-      req.application = rows[0]
-      next()
-    })
+    console.log(`The ID of the application: ${id}`)
+    sqlSVC.selectApplicationById(id)
+      .then((application) => {
+        console.log(`The Application: ${JSON.stringify(application)}`)
+        req.application = application
+        next()
+      })
+      .catch(next)
   }
 
   const roleIdParam = function __roleIdParam (req, res, next, id) {
-    let params = [ id ]
-    let sql = roleSelectSQL
-    if (req.application) {
-      sql += ' AND application_id = ?'
-      params.push(req.application.id)
-    }
+    sqlSVC.selectApplicationRoleById(id)
+      .then((role) => {
+        if (req.application) {
+          if (role.application_id === req.application.id) {
+            req.role = role
+            return next()
+          } else {
+            return next(new Error("Role's application id doesn't match specified application"))
+          }
+        } else {
+          req.role = role
+          next()
+        }
+      })
+  }
 
-    dbConn.all(sql, ...params, (err, rows) => {
-      if (err) return next(err)
-      req.role = rows[0]
-      next()
-    })
+  const releaseIdParam = function __releaseIdParam (req, res, next, id) {
+    sqlSVC.selectApplicationReleaseById(id)
+      .then((release) => {
+        if (req.application) {
+          if (release.application_id === req.application.id) {
+            req.release = release
+            return next()
+          } else {
+            return next(new Error("Release's application id doesn't match specified application"))
+          }
+        } else {
+          req.release = release
+          next()
+        }
+      })
   }
 
   var mod = {
     applicationIdParam: applicationIdParam,
+    releaseIdParam: releaseIdParam,
     roleIdParam: roleIdParam
   }
 

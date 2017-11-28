@@ -3,71 +3,67 @@
 /* global appDeployConfig */
 
 module.exports = (function () {
-  const dbConn = require('../utility/db').conn()
   const path = require('path')
   const fs = require('fs-extra')
+  const async = require('async')
+  const sqlSVC = require('../sql/sql-service')
 
-  const insertReleaseSQL = `
-    INSERT INTO releases (
-      application_id, version, tarball, created_at
-    ) VALUES (
-      ?, ?, ?, DATETIME('now')
-    )`
+  const _registerDeployments = (roles, releaseId, deployAt) => {
+    return new Promise((resolve, reject) => {
+      const eachRole = (role, cb) => {
+        sqlSVC.insertDeployment(releaseId, role, deployAt)
+          .then(() => cb())
+          .catch(cb)
+      }
 
-  const selectReleaseSQL = `
-    SELECT 
-      rowid AS id, 
-      application_id, 
-      version, 
-      tarball, 
-      created_at 
-    FROM 
-      releases 
-    WHERE 
-      application_id = ? 
-    ORDER BY 
-      rowid DESC 
-    LIMIT 1`
+      const loopDone = (err) => {
+        if (err) return reject(err)
+        resolve()
+      }
 
-  const insertDeploymentSQL = `
-    INSERT INTO deployments (
-      release_id, role_id, deploy_at, status, created_at
-    ) VALUES (
-      ?,?,?,0,DATETIME('now')
-    )`
+      async.eachSeries(roles, eachRole, loopDone)
+    })
+  }
 
   const registerRelease = (tarballName, deployParams) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(insertReleaseSQL, deployParams.application_id, deployParams.version, tarballName, (err) => {
-        if (err) return reject(err)
-        dbConn.all(selectReleaseSQL, deployParams.application_id, (err, rows) => {
-          if (err) return reject(err)
-          let release = rows[0]
-          dbConn.serialize(() => {
-            let deploymentSQL = dbConn.prepare(insertDeploymentSQL)
-            if (deployParams.role instanceof Array) {
-              for (let rid of deployParams.role) {
-                deploymentSQL.run(release.id, rid, deployParams.deploy_at)
-              }
-            } else {
-              deploymentSQL.run(release.id, deployParams.role, deployParams.deploy_at)
-            }
-            deploymentSQL.finalize()
-            resolve(release)
-          })
-        })
+    return sqlSVC.insertRelease(deployParams.application_id, deployParams.version, tarballName)
+      .then(() => sqlSVC.selectLatestApplicationRelease(deployParams.application_id))
+      .then((release) => {
+        if (deployParams.role instanceof Array) {
+          return _registerDeployments(deployParams.role, release.id, deployParams.deploy_at)
+            .then(() => release)
+        } else {
+          return sqlSVC.insertDeployment(release.id, deployParams.role, deployParams.deploy_at)
+            .then(() => release)
+        }
       })
-    })
+  }
+
+  const deleteTarball = (releaseId) => {
+    let tarballPath = path.join(appDeployConfig.environment.tarballPath, '' + releaseId)
+    return fs.remove(tarballPath)
   }
 
   const saveTarball = (uploadedTarball, releaseId) => {
     let tarballPath = path.join(appDeployConfig.environment.tarballPath, '' + releaseId, uploadedTarball.originalname)
     return fs.ensureDir(path.join(appDeployConfig.environment.tarballPath, '' + releaseId))
       .then(() => fs.copy(uploadedTarball.path, tarballPath))
+      .then(() => fs.remove(uploadedTarball.path))
       .then(() => tarballPath)
   }
 
+  const deleteReleaseDeployments = (releaseId) => {
+    return sqlSVC.deleteReleaseDeployments(releaseId)
+  }
+
+  const deleteRoleDeployments = (roleId) => {
+    return sqlSVC.deleteRoleDeployments(roleId)
+  }
+
   var mod = {
+    deleteReleaseDeployments: deleteReleaseDeployments,
+    deleteRoleDeployments: deleteRoleDeployments,
+    deleteTarball: deleteTarball,
     registerRelease: registerRelease,
     saveTarball: saveTarball
   }

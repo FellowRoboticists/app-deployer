@@ -1,107 +1,89 @@
 'use strict'
 
 module.exports = (function () {
-  const dbConn = require('../utility/db').conn()
-  const winston = require('winston')
+  const deploySVC = require('../deploy/deploy-service')
+  const releaseSVC = require('../release/release-service')
+  const sqlSVC = require('../sql/sql-service')
 
   const createApplication = (applicationParams) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run('INSERT INTO applications (name) VALUES (?)', applicationParams.name, (err) => {
-        if (err) return reject(err)
-        dbConn.all('SELECT rowid AS id, name FROM applications ORDER BY rowid DESC LIMIT 1', (err, rows) => {
-          if (err) return reject(err)
-          resolve(rows[0])
-        })
-      })
-    })
+    return sqlSVC.insertApplication(applicationParams.name)
+      .then(() => sqlSVC.selectLatestApplication())
   }
 
   const deleteApplication = (application) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run('DELETE FROM roles WHERE application_id = ?', application.id, (err) => {
-        if (err) return reject(err)
-        dbConn.run('DELETE FROM applications WHERE rowid = ?', application.id, (err) => {
-          if (err) return reject(err)
-          resolve(application)
-        })
-      })
-    })
+    return releaseSVC.deleteApplicationTarballs(application.id)
+      .then(() => sqlSVC.deleteApplicationReleases(application.id))
+      .then(() => sqlSVC.deleteApplicationDeployments(application.id))
+      .then(() => sqlSVC.deleteApplicationRoles(application.id))
+      .then(() => sqlSVC.deleteApplications(application.id))
+      .then(() => application)
   }
 
   const getApplications = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.all('SELECT rowid as id, name FROM applications', (err, rows) => {
-        if (err) {
-          winston.log('error', err.stack || err)
-          return reject(err)
-        }
-        resolve(rows)
-      })
-    })
+    return sqlSVC.selectAllApplications()
   }
 
   const updateApplication = (application, params) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run('UPDATE applications SET name = ? WHERE rowid = ?', params.name, application.id, (err) => {
-        if (err) return reject(err)
-        dbConn.all('SELECT rowid AS id, name FROM applications WHERE rowid = ?', application.id, (err, rows) => {
-          if (err) return reject(err)
-          resolve(rows[0])
-        })
-      })
-    })
+    return sqlSVC.updateApplication(application.id, params)
+      .then(() => sqlSVC.selectApplicationById(application.id))
+  }
+
+  const getApplicationReleases = (application) => {
+    return sqlSVC.selectApplicationReleases(application.id)
   }
 
   const getApplicationRoles = (application) => {
-    return new Promise((resolve, reject) => {
-      dbConn.all('SELECT rowid AS id, application_id, role, active_server FROM roles WHERE application_id = ?', application.id, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows)
+    return sqlSVC.selectApplicationRoles(application.id)
+  }
+
+  const createApplicationRelease = (application, uploadedTarball, releaseParams) => {
+    return sqlSVC.insertRelease(releaseParams.application_id, releaseParams.version, uploadedTarball.originalname)
+      .then(() => sqlSVC.selectLatestApplicationRelease(releaseParams.application_id))
+      .then((release) => {
+        return deploySVC.saveTarball(uploadedTarball, release.id)
+          .then((fullPath) => release)
       })
-    })
   }
 
   const createApplicationRole = (application, roleParams) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run('INSERT INTO roles (application_id, role, active_server) VALUES (?, ?, ?)', application.id, roleParams.role, roleParams.active_server, (err) => {
-        if (err) return reject(err)
-        dbConn.all('SELECT rowid AS id, application_id, role, active_server FROM roles WHERE application_id = ? ORDER BY rowid DESC LIMIT 1', application.id, (err, rows) => {
-          if (err) return reject(err)
-          resolve(rows[0])
-        })
-      })
-    })
+    return sqlSVC.insertApplicationRole(application.id, roleParams)
+      .then(() => sqlSVC.selectLatestApplicationRole(application.id))
+  }
+
+  const updateApplicationRelease = (application, release, releaseParams) => {
+    return sqlSVC.updateApplicationRelease(application.id, release.id, releaseParams)
+      .then(() => sqlSVC.selectApplicationReleaseById(release.id))
   }
 
   const updateApplicationRole = (application, role, roleParams) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run('UPDATE roles SET application_id = ?, role = ?, active_server = ? WHERE rowid = ?', application.id, roleParams.role, roleParams.active_server, role.id, (err) => {
-        if (err) return reject(err)
-        dbConn.all('SELECT rowid AS id, application_id, role, active_server FROM roles WHERE rowid = ?', role.id, (err, rows) => {
-          if (err) return reject(err)
-          resolve(rows[0])
-        })
-      })
-    })
+    return sqlSVC.updateApplicationRole(application.id, role.id, roleParams)
+      .then(() => sqlSVC.selectApplicationRoleById(role.id))
+  }
+
+  const deleteApplicationRelease = (release) => {
+    return sqlSVC.deleteApplicationRelease(release.id)
+      .then(() => deploySVC.deleteTarball(release.id))
+      .then(() => release)
   }
 
   const deleteApplicationRole = (role) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run('DELETE FROM roles WHERE rowid = ?', role.id, (err) => {
-        if (err) return reject(err)
-        resolve(role)
-      })
-    })
+    return sqlSVC.deleteRoleDeployments(role.id)
+      .then(() => sqlSVC.deleteApplicationRole(role.id))
+      .then(() => role)
   }
 
   var mod = {
     createApplication: createApplication,
+    createApplicationRelease: createApplicationRelease,
     createApplicationRole: createApplicationRole,
     deleteApplication: deleteApplication,
+    deleteApplicationRelease: deleteApplicationRelease,
     deleteApplicationRole: deleteApplicationRole,
+    getApplicationReleases: getApplicationReleases,
     getApplicationRoles: getApplicationRoles,
     getApplications: getApplications,
     updateApplication: updateApplication,
+    updateApplicationRelease: updateApplicationRelease,
     updateApplicationRole: updateApplicationRole
   }
 
