@@ -3,6 +3,21 @@
 module.exports = (function () {
   const dbConn = require('../utility/db').conn()
 
+  const changeUserPasswordSQL = `
+    UPDATE users SET
+      password = ?
+    WHERE
+      rowid = ?`
+
+  const changeUserPassword = (userId, encryptedPassword) => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(changeUserPasswordSQL, encryptedPassword, userId, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
   const deleteApplicationsSQL = `
     DELETE FROM applications
     WHERE
@@ -115,6 +130,20 @@ module.exports = (function () {
     })
   }
 
+  const deleteUserSQL = `
+    DELETE FROM users
+    WHERE
+      rowid = ?`
+
+  const deleteUser = (userId) => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(deleteUserSQL, userId, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
   const insertApplicationRoleSQL = `
     INSERT INTO roles (
       application_id, 
@@ -183,6 +212,25 @@ module.exports = (function () {
   const insertRelease = (appId, version, tarball) => {
     return new Promise((resolve, reject) => {
       dbConn.run(insertReleaseSQL, appId, version, tarball, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
+  const insertUserSQL = `
+    INSERT INTO users (
+      email,
+      name,
+      user_role,
+      password
+    ) VALUES (
+      ?, ?, ?, ?
+    )`
+
+  const insertUser = (userParams, encryptedPassword) => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(insertUserSQL, userParams.email, userParams.name, userParams.user_role, encryptedPassword, (err) => {
         if (err) return reject(err)
         resolve()
       })
@@ -391,10 +439,32 @@ module.exports = (function () {
     })
   }
 
+  const selectLatestUserSQL = `
+    SELECT
+      rowid AS id,
+      email,
+      name,
+      user_role
+    FROM
+      users
+    ORDER BY
+      rowid DESC
+    LIMIT 1`
+
+  const selectLatestUser = () => {
+    return new Promise((resolve, reject) => {
+      dbConn.all(selectLatestUserSQL, (err, rows) => {
+        if (err) return reject(err)
+        resolve(rows[0])
+      })
+    })
+  }
+
   const selectUserByEmailSQL = `
     SELECT
+      rowid AS id,
       email,
-      password,
+      name,
       user_role,
       password
     FROM
@@ -407,6 +477,45 @@ module.exports = (function () {
       dbConn.get(selectUserByEmailSQL, email, (err, row) => {
         if (err) return reject(err)
         resolve(row)
+      })
+    })
+  }
+
+  const selectUserByIdSQL = `
+    SELECT
+      rowid AS id,
+      email,
+      password,
+      name,
+      user_role
+    FROM
+      users
+    WHERE
+      rowid = ?`
+
+  const selectUserById = (id) => {
+    return new Promise((resolve, reject) => {
+      dbConn.get(selectUserByIdSQL, id, (err, row) => {
+        if (err) return reject(err)
+        resolve(row)
+      })
+    })
+  }
+
+  const selectUsersSQL = `
+    SELECT
+      rowid AS id,
+      email,
+      name,
+      user_role
+    FROM
+      users`
+
+  const selectUsers = () => {
+    return new Promise((resolve, reject) => {
+      dbConn.all(selectUsersSQL, (err, rows) => {
+        if (err) return reject(err)
+        resolve(rows)
       })
     })
   }
@@ -460,7 +569,24 @@ module.exports = (function () {
     })
   }
 
+  const updateUserSQL = `
+    UPDATE users SET
+      name = ?,
+      user_role = ?
+    WHERE
+      rowid = ?`
+
+  const updateUser = (userId, userParams) => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(updateUserSQL, userParams.name, userParams.user_role, userId, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
   var mod = {
+    changeUserPassword: changeUserPassword,
     deleteApplications: deleteApplications,
     deleteApplicationDeployments: deleteApplicationDeployments,
     deleteApplicationRelease: deleteApplicationRelease,
@@ -469,10 +595,12 @@ module.exports = (function () {
     deleteApplicationRoles: deleteApplicationRoles,
     deleteReleaseDeployments: deleteReleaseDeployments,
     deleteRoleDeployments: deleteRoleDeployments,
+    deleteUser: deleteUser,
     insertApplication: insertApplication,
     insertApplicationRole: insertApplicationRole,
     insertDeployment: insertDeployment,
     insertRelease: insertRelease,
+    insertUser: insertUser,
     selectAllApplications: selectAllApplications,
     selectApplicationById: selectApplicationById,
     selectApplicationReleaseById: selectApplicationReleaseById,
@@ -483,10 +611,14 @@ module.exports = (function () {
     selectLatestApplication: selectLatestApplication,
     selectLatestApplicationRelease: selectLatestApplicationRelease,
     selectLatestApplicationRole: selectLatestApplicationRole,
+    selectLatestUser: selectLatestUser,
     selectUserByEmail: selectUserByEmail,
+    selectUserById: selectUserById,
+    selectUsers: selectUsers,
     updateApplication: updateApplication,
     updateApplicationRelease: updateApplicationRelease,
-    updateApplicationRole: updateApplicationRole
+    updateApplicationRole: updateApplicationRole,
+    updateUser: updateUser
   }
 
   return mod

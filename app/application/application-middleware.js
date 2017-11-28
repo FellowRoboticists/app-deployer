@@ -4,10 +4,8 @@ module.exports = (function () {
   const sqlSVC = require('../sql/sql-service')
 
   const applicationIdParam = function __applicationIdParam (req, res, next, id) {
-    console.log(`The ID of the application: ${id}`)
     sqlSVC.selectApplicationById(id)
       .then((application) => {
-        console.log(`The Application: ${JSON.stringify(application)}`)
         req.application = application
         next()
       })
