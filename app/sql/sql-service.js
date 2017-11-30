@@ -232,14 +232,15 @@ module.exports = (function () {
       application_id, 
       version, 
       tarball, 
+      seedfile,
       created_at
     ) VALUES (
-      ?, ?, ?, DATETIME('now')
+      ?, ?, ?, ?, DATETIME('now')
     )`
 
-  const insertRelease = (appId, version, tarball) => {
+  const insertRelease = (appId, version, tarball, seedfile) => {
     return new Promise((resolve, reject) => {
-      dbConn.run(insertReleaseSQL, appId, version, tarball, (err) => {
+      dbConn.run(insertReleaseSQL, appId, version, tarball, seedfile, (err) => {
         if (err) return reject(err)
         resolve()
       })
@@ -371,6 +372,7 @@ module.exports = (function () {
       application_id,
       version,
       tarball,
+      seedfile,
       created_at
     FROM
       releases
@@ -392,6 +394,7 @@ module.exports = (function () {
       application_id,
       version,
       tarball,
+      seedfile,
       created_at
     FROM
       releases
@@ -455,6 +458,7 @@ module.exports = (function () {
       application_id, 
       version, 
       tarball, 
+      seedfile,
       created_at 
     FROM 
       releases 

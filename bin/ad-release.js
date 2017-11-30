@@ -17,6 +17,7 @@ program
   .option('-a, --app-id <appid>', 'The id of the application of the role: required')
   .option('-q, --app-version <app-version>', 'Specify the version of the new release. Use with --create or --update')
   .option('-t, --tarball <tarball>', 'Specify the path of the tarball. Use with --create')
+  .option('-s, --seedfile <seedfile>', 'Specify the path of the seedfile. Use with --create')
   .option('-l, --list', 'List the releases')
   .option('-u, --update', 'Update the release')
   .option('-d, --delete', 'Delete a release')
@@ -31,8 +32,7 @@ const releaseUri = (appId, releaseId) => {
   return `${baseUri(appId)}/${releaseId}`
 }
 
-const createRelease = (appId, version, tarball, token) => {
-  console.log('We got here')
+const createRelease = (appId, version, tarball, seedfile, token) => {
   if (!version || !tarball) {
     console.error('Must specify the version and tarball of the release to create!')
     process.exit(1)
@@ -53,6 +53,15 @@ const createRelease = (appId, version, tarball, token) => {
           filename: path.basename(tarball),
           contentType: 'application/octet-stream'
         }
+      }
+    }
+  }
+  if (seedfile) {
+    options.formData.seedfile = {
+      value: fs.createReadStream(seedfile),
+      options: {
+        filename: path.basename(seedfile),
+        contentType: 'application/octet-stream'
       }
     }
   }
@@ -98,10 +107,10 @@ const listReleases = (appId, token) => {
     .then((releases) => {
       console.log('Releases')
       let table = new Table({
-        head: ['rowid', 'application_id', 'version', 'tarball', 'created_at']
+        head: ['rowid', 'application_id', 'version', 'tarball', 'seedfile', 'created_at']
       })
       releases.forEach((release) => {
-        table.push([release.id, release.application_id, release.version, release.tarball, release.created_at])
+        table.push([release.id, release.application_id, release.version, release.tarball, release.seedfile ? release.seedfile : '', release.created_at])
       })
       console.log(table.toString())
       console.log(`${releases.length} Releases`)
@@ -142,7 +151,7 @@ const readToken = () => {
 readToken()
   .then((token) => {
     if (program.create) {
-      createRelease(program.appId, program.appVersion, program.tarball, token)
+      createRelease(program.appId, program.appVersion, program.tarball, program.seedfile, token)
     } else if (program.update) {
       updateRelease(program.appId, program.id, program.appVersion, token)
     } else if (program.list) {
@@ -151,4 +160,4 @@ readToken()
       deleteRelease(program.appId, program.id, token)
     }
   })
-  .catch(() => console.error('Not logged in.'))
+  .catch((err) => console.error('Not logged in: ' + err.stack || err))

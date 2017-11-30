@@ -3,6 +3,7 @@
 var express = require('express')
 var router = express.Router()
 const multer = require('multer')
+const winston = require('winston')
 
 const upload = multer({ dest: '/tmp' })
 
@@ -145,12 +146,20 @@ router.post(
   `/:application(${generalMW.dbId})/releases`,
   sessionMW.verifyJwtToken,
   sessionMW.isAuthorized(['admin']),
-  upload.array('tarball', 1),
+  upload.fields([{
+    name: 'tarball', maxCount: 1
+  }, {
+    name: 'seedfile', maxCount: 1
+  }]),
   function __createApplicationRelease (req, res, next) {
-    if (req.files.length === 0) {
+    winston.log('info', `### ${JSON.stringify(req.files)}`)
+    if (req.files['tarball'].length !== 1) {
       return res.status(400).json('No tarball was uploaded')
     }
-    applicationCTX.createApplicationRelease(req.application, req.files[0], req.body)
+    console.log('info', `### ${JSON.stringify(req.files['tarball'])}`)
+    let tarball = req.files['tarball'][0]
+    let seedfile = req.files['seedfile'] ? req.files['seedfile'][0] : null
+    applicationCTX.createApplicationRelease(req.application, tarball, seedfile, req.body)
       .then((release) => res.json(release))
       .catch(next)
   }

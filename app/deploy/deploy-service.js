@@ -52,6 +52,14 @@ module.exports = (function () {
       .then(() => tarballPath)
   }
 
+  const saveSeedfile = (uploadedSeedfile, releaseId) => {
+    let seedfilePath = path.join(appDeployConfig.environment.tarballPath, '' + releaseId, uploadedSeedfile.originalname)
+    return fs.ensureDir(path.join(appDeployConfig.environment.tarballPath, '' + releaseId))
+      .then(() => fs.copy(uploadedSeedfile.path, seedfilePath))
+      .then(() => fs.remove(uploadedSeedfile.path))
+      .then(() => seedfilePath)
+  }
+
   const deleteReleaseDeployments = (releaseId) => {
     return sqlSVC.deleteReleaseDeployments(releaseId)
   }
@@ -65,6 +73,7 @@ module.exports = (function () {
     deleteRoleDeployments: deleteRoleDeployments,
     deleteTarball: deleteTarball,
     registerRelease: registerRelease,
+    saveSeedfile: saveSeedfile,
     saveTarball: saveTarball
   }
 

@@ -36,12 +36,20 @@ module.exports = (function () {
     return sqlSVC.selectApplicationRoles(application.id)
   }
 
-  const createApplicationRelease = (application, uploadedTarball, releaseParams) => {
-    return sqlSVC.insertRelease(releaseParams.application_id, releaseParams.version, uploadedTarball.originalname)
+  const createApplicationRelease = (application, uploadedTarball, uploadedSeedfile, releaseParams) => {
+    let seedFileName = uploadedSeedfile ? uploadedSeedfile.originalname : null
+    return sqlSVC.insertRelease(releaseParams.application_id, releaseParams.version, uploadedTarball.originalname, seedFileName)
       .then(() => sqlSVC.selectLatestApplicationRelease(releaseParams.application_id))
       .then((release) => {
         return deploySVC.saveTarball(uploadedTarball, release.id)
-          .then((fullPath) => release)
+          .then((fullPath) => {
+            if (uploadedSeedfile) {
+              return deploySVC.saveSeedfile(uploadedSeedfile, release.id)
+                .then((fullPath) => release)
+            } else {
+              return release
+            }
+          })
       })
   }
 

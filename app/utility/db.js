@@ -59,7 +59,7 @@ module.exports = (function () {
           if (err) { return reject(err) }
           if (!row) {
             winston.log('info', 'Need to create the releases table')
-            db.connection.run('CREATE TABLE releases (application_id INTEGER, version TEXT, tarball TEXT, created_at INTEGER)', (err) => {
+            db.connection.run('CREATE TABLE releases (application_id INTEGER, version TEXT, tarball TEXT, seedfile TEXT, created_at INTEGER)', (err) => {
               if (err) { return reject(err) }
             })
           }
