@@ -6,6 +6,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
+const Table = require('cli-table')
 
 program
   .version('0.0.1')
@@ -91,11 +92,13 @@ const listUsers = (token) => {
   request.get(options)
     .then((users) => {
       console.log('Users')
-      console.log('============')
-      users.forEach((user) => {
-        console.log(`${user.id} - ${user.email}, ${user.name}, ${user.user_role}`)
+      let table = new Table({
+        head: ['rowid', 'email', 'name', 'user_role']
       })
-      console.log('------------')
+      users.forEach((user) => {
+        table.push([user.id, user.email, user.name, user.user_role])
+      })
+      console.log(table.toString())
       console.log(`${users.length} Users`)
     })
     .catch(console.error)

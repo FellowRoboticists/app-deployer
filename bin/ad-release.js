@@ -5,6 +5,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
+const Table = require('cli-table')
 
 program
   .version('0.0.1')
@@ -96,11 +97,13 @@ const listReleases = (appId, token) => {
   request.get(options)
     .then((releases) => {
       console.log('Releases')
-      console.log('============')
-      releases.forEach((release) => {
-        console.log(`${release.id} - ${release.application_id}, ${release.version}, ${release.tarball}, ${release.created_at}`)
+      let table = new Table({
+        head: ['rowid', 'application_id', 'version', 'tarball', 'created_at']
       })
-      console.log('------------')
+      releases.forEach((release) => {
+        table.push([release.id, release.application_id, release.version, release.tarball, release.created_at])
+      })
+      console.log(table.toString())
       console.log(`${releases.length} Releases`)
     })
     .catch(console.error)

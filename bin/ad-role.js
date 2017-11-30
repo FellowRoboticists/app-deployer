@@ -5,6 +5,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
+const Table = require('cli-table')
 
 program
   .version('0.0.1')
@@ -84,11 +85,13 @@ const listRoles = (appId, token) => {
   request.get(options)
     .then((roles) => {
       console.log('Roles')
-      console.log('============')
-      roles.forEach((role) => {
-        console.log(`${role.id} - ${role.application_id}, ${role.role}, ${role.active_server}, ${role.time_window}`)
+      let table = new Table({
+        head: ['rowid', 'application_id', 'role', 'active_server', 'time_window']
       })
-      console.log('------------')
+      roles.forEach((role) => {
+        table.push([role.id, role.application_id, role.role, role.active_server, role.time_window])
+      })
+      console.log(table.toString())
       console.log(`${roles.length} Roles`)
     })
     .catch(console.error)

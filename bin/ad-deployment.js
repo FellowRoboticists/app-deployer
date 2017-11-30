@@ -5,6 +5,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
+const Table = require('cli-table')
 
 program
   .version('0.0.1')
@@ -92,11 +93,13 @@ const listDeployments = (releaseId, roleId, token) => {
   request.get(options)
     .then((deployments) => {
       console.log('Deployments')
-      console.log('============')
-      deployments.forEach((deployment) => {
-        console.log(`${deployment.id} - ${deployment.name}, ${deployment.version}, ${deployment.role}, ${deployment.status}`)
+      let table = new Table({
+        head: ['rowid', 'name', 'version', 'role', 'status']
       })
-      console.log('------------')
+      deployments.forEach((deployment) => {
+        table.push([deployment.id, deployment.name, deployment.version, deployment.role, deployment.status])
+      })
+      console.log(table.toString())
       console.log(`${deployments.length} Deployments`)
     })
     .catch(console.error)

@@ -5,6 +5,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
+const Table = require('cli-table')
 
 program
   .version('0.0.1')
@@ -84,11 +85,13 @@ const listApplications = (token) => {
   request.get(options)
     .then((applications) => {
       console.log('Applications')
-      console.log('============')
-      applications.forEach((app) => {
-        console.log(`${app.id} - ${app.name}`)
+      let table = new Table({
+        head: ['rowid', 'name']
       })
-      console.log('------------')
+      applications.forEach((app) => {
+        table.push([app.id, app.name])
+      })
+      console.log(table.toString())
       console.log(`${applications.length} Applications`)
     })
     .catch(console.error)

@@ -5,6 +5,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
+const Table = require('cli-table')
 
 program
   .version('0.0.1')
@@ -107,11 +108,13 @@ const listWorkflows = (roleId, token) => {
   request.get(options)
     .then((workflows) => {
       console.log('Workflows')
-      console.log('============')
-      workflows.forEach((workflow) => {
-        console.log(`${workflow.id} - ${workflow.role_id}, ${workflow.playbook}, ${workflow.sequence}, ${workflow.enforce_tw}, ${workflow.pause_after}, ${workflow.final}`)
+      let table = new Table({
+        head: ['rowid', 'role_id', 'playbook', 'sequence', 'enforce_tw', 'pause_after', 'final']
       })
-      console.log('------------')
+      workflows.forEach((workflow) => {
+        table.push([workflow.id, workflow.role_id, workflow.playbook, workflow.sequence, workflow.enforce_tw, workflow.pause_after, workflow.final])
+      })
+      console.log(table.toString())
       console.log(`${workflows.length} Workflows`)
     })
     .catch(console.error)
