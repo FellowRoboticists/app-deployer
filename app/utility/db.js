@@ -50,7 +50,7 @@ module.exports = (function () {
           if (err) { return reject(err) }
           if (!row) {
             winston.log('info', 'Need to create the deployments table')
-            db.connection.run('CREATE TABLE deployments (release_id INTEGER, role_id INTEGER, override_token TEXT, status INTEGER, created_at INTEGER)', (err) => {
+            db.connection.run('CREATE TABLE deployments (release_id INTEGER, role_id INTEGER, override_token TEXT, step INTEGER, status INTEGER, created_at INTEGER)', (err) => {
               if (err) { return reject(err) }
             })
           }
@@ -60,6 +60,15 @@ module.exports = (function () {
           if (!row) {
             winston.log('info', 'Need to create the releases table')
             db.connection.run('CREATE TABLE releases (application_id INTEGER, version TEXT, tarball TEXT, created_at INTEGER)', (err) => {
+              if (err) { return reject(err) }
+            })
+          }
+        })
+        db.connection.get("SELECT name FROM sqlite_master WHERE type='table' AND name='workflows';", (err, row) => {
+          if (err) { return reject(err) }
+          if (!row) {
+            winston.log('info', 'Need to create the workflows table')
+            db.connection.run('CREATE TABLE workflows (role_id INTEGER, playbook TEXT, sequence INTEGER, enforce_tw INTEGER, pause_after INTEGER, final INTEGER)', (err) => {
               if (err) { return reject(err) }
             })
           }

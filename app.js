@@ -27,11 +27,12 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 logging.expressLogging(app)
 
-app.use('/deploys', require('./app/deploy/deploy-controller'))
+app.use('/deployments', require('./app/deploy/deploy-controller'))
 app.use('/applications', require('./app/application/application-controller'))
 app.use('/reports', require('./app/report/report-controller'))
 app.use('/sessions', require('./app/session/session-controller'))
 app.use('/users', require('./app/user/user-controller'))
+app.use('/workflows', require('./app/workflow/workflow-controller'))
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {

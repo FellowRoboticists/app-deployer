@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict'
 
+const fs = require('fs-extra')
+const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
 
@@ -28,7 +30,7 @@ const roleUri = (appId, roleId) => {
   return `${baseUri(appId)}/${roleId}`
 }
 
-const createRole = (appId, name, server, timeWindow) => {
+const createRole = (appId, name, server, timeWindow, token) => {
   if (!name || !server) {
     console.error('Must specify the name and server of the role to create!')
     process.exit(1)
@@ -37,6 +39,9 @@ const createRole = (appId, name, server, timeWindow) => {
     method: 'POST',
     url: baseUri(appId),
     json: true,
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
     body: { role: name, active_server: server, time_window: timeWindow }
   }
   request(options)
@@ -46,7 +51,7 @@ const createRole = (appId, name, server, timeWindow) => {
     .catch(console.error)
 }
 
-const updateRole = (appId, id, name, server, timeWindow) => {
+const updateRole = (appId, id, name, server, timeWindow, token) => {
   if (!name || !id || !server) {
     console.error('Must specify the information of the role to update!')
     process.exit(1)
@@ -55,6 +60,9 @@ const updateRole = (appId, id, name, server, timeWindow) => {
     method: 'PUT',
     url: roleUri(appId, id),
     json: true,
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
     body: { application_id: appId, role: name, active_server: server, time_window: timeWindow }
   }
   request(options)
@@ -64,9 +72,12 @@ const updateRole = (appId, id, name, server, timeWindow) => {
     .catch(console.err)
 }
 
-const listRoles = (appId) => {
+const listRoles = (appId, token) => {
   let options = {
     url: baseUri(appId),
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
     json: true
   }
 
@@ -83,7 +94,7 @@ const listRoles = (appId) => {
     .catch(console.error)
 }
 
-const deleteRole = (appId, id) => {
+const deleteRole = (appId, id, token) => {
   if (!id) {
     console.error('Must specify the id of the role to delete!')
     process.exit(1)
@@ -91,6 +102,9 @@ const deleteRole = (appId, id) => {
   let options = {
     method: 'DELETE',
     url: roleUri(appId, id),
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
     json: true
   }
   request(options)
@@ -105,12 +119,21 @@ if (!program.appId) {
   process.exit(1)
 }
 
-if (program.create) {
-  createRole(program.appId, program.name, program.server, program.timeWindow)
-} else if (program.update) {
-  updateRole(program.appId, program.id, program.name, program.server, program.timeWindow)
-} else if (program.list) {
-  listRoles(program.appId)
-} else if (program.delete) {
-  deleteRole(program.appId, program.id)
+const readToken = () => {
+  let tokenPath = path.join(process.env.HOME, '.app-deployer/token')
+  return fs.readFile(tokenPath, 'utf8')
 }
+
+readToken()
+  .then((token) => {
+    if (program.create) {
+      createRole(program.appId, program.name, program.server, program.timeWindow, token)
+    } else if (program.update) {
+      updateRole(program.appId, program.id, program.name, program.server, program.timeWindow, token)
+    } else if (program.list) {
+      listRoles(program.appId, token)
+    } else if (program.delete) {
+      deleteRole(program.appId, program.id, token)
+    }
+  })
+  .catch(() => console.error('Not logged in.'))

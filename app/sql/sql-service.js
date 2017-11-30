@@ -130,6 +130,20 @@ module.exports = (function () {
     })
   }
 
+  const deleteRoleWorkflowsSQL = `
+    DELETE FROM workflows
+    WHERE
+      role_id = ?`
+
+  const deleteRoleWorkflows = (roleId) => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(deleteRoleWorkflowsSQL, roleId, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
   const deleteUserSQL = `
     DELETE FROM users
     WHERE
@@ -144,12 +158,26 @@ module.exports = (function () {
     })
   }
 
+  const deleteWorkflowSQL = `
+    DELETE FROM workflows
+    WHERE
+      rowid = ?`
+
+  const deleteWorkflow = (id) => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(deleteWorkflowSQL, id, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
   const insertApplicationRoleSQL = `
     INSERT INTO roles (
       application_id, 
       role, 
       active_server,
-      time_window,
+      time_window
     ) VALUES (
       ?, ?, ?, ?
     )`
@@ -183,16 +211,16 @@ module.exports = (function () {
     INSERT INTO deployments (
       release_id, 
       role_id, 
-      override_token, 
+      step,
       status, 
       created_at
     ) VALUES (
-      ?,?,?,0,DATETIME('now')
+      ?,?,0,0,DATETIME('now')
     )`
 
-  const insertDeployment = (releaseId, roleId, deployAt) => {
+  const insertDeployment = (releaseId, roleId) => {
     return new Promise((resolve, reject) => {
-      dbConn.run(insertDeploymentSQL, releaseId, roleId, deployAt, (err) => {
+      dbConn.run(insertDeploymentSQL, releaseId, roleId, (err) => {
         if (err) return reject(err)
         resolve()
       })
@@ -237,6 +265,27 @@ module.exports = (function () {
     })
   }
 
+  const insertWorkflowSQL = `
+    INSERT INTO workflows (
+      role_id,
+      playbook,
+      sequence,
+      enforce_tw,
+      pause_after,
+      final
+    ) VALUES (
+      ?,?,?,?,?,?
+    )`
+
+  const insertWorkflow = (roleId, playbook, sequence, enforceTW, pause, finalStep) => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(insertWorkflowSQL, roleId, playbook, sequence, enforceTW, pause, finalStep, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
   const selectAllApplicationsSQL = `
     SELECT 
       rowid as id, 
@@ -247,6 +296,34 @@ module.exports = (function () {
   const selectAllApplications = () => {
     return new Promise((resolve, reject) => {
       dbConn.all(selectAllApplicationsSQL, (err, rows) => {
+        if (err) return reject(err)
+        resolve(rows)
+      })
+    })
+  }
+
+  const selectDeploymentsSQL = `
+    SELECT
+      deps.rowid AS id,
+      deps.step,
+      deps.status,
+      deps.created_at,
+      rols.role,
+      rols.active_server,
+      rols.time_window,
+      rels.version,
+      apps.name
+    FROM
+      deployments deps INNER JOIN releases rels ON deps.release_id = rels.rowid
+      INNER JOIN roles rols ON deps.role_id = rols.rowid
+      INNER JOIN applications apps ON rels.application_id = apps.rowid
+    WHERE
+      deps.release_id = ?
+      OR deps.role_id = ?`
+
+  const selectDeployments = (releaseId, roleId) => {
+    return new Promise((resolve, reject) => {
+      dbConn.all(selectDeploymentsSQL, releaseId, roleId, (err, rows) => {
         if (err) return reject(err)
         resolve(rows)
       })
@@ -439,6 +516,30 @@ module.exports = (function () {
     })
   }
 
+  const selectLatestDeploymentSQL = `
+    SELECT
+      rowid AS id,
+      release_id,
+      role_id,
+      override_token,
+      step,
+      status,
+      created_at
+    FROM
+      deployments
+    ORDER BY
+      rowid DESC
+    LIMIT 1`
+
+  const selectLatestDeployment = () => {
+    return new Promise((resolve, reject) => {
+      dbConn.all(selectLatestDeploymentSQL, (err, rows) => {
+        if (err) return reject(err)
+        resolve(rows[0])
+      })
+    })
+  }
+
   const selectLatestUserSQL = `
     SELECT
       rowid AS id,
@@ -454,6 +555,30 @@ module.exports = (function () {
   const selectLatestUser = () => {
     return new Promise((resolve, reject) => {
       dbConn.all(selectLatestUserSQL, (err, rows) => {
+        if (err) return reject(err)
+        resolve(rows[0])
+      })
+    })
+  }
+
+  const selectLatestWorkflowSQL = `
+    SELECT
+      rowid as id,
+      role_id,
+      playbook,
+      sequence,
+      enforce_tw,
+      pause_after,
+      final
+    FROM
+      workflows
+    ORDER BY
+      rowid DESC
+    LIMIT 1`
+
+  const selectLatestWorkflow = () => {
+    return new Promise((resolve, reject) => {
+      dbConn.all(selectLatestWorkflowSQL, (err, rows) => {
         if (err) return reject(err)
         resolve(rows[0])
       })
@@ -516,6 +641,101 @@ module.exports = (function () {
       dbConn.all(selectUsersSQL, (err, rows) => {
         if (err) return reject(err)
         resolve(rows)
+      })
+    })
+  }
+
+  const selectWorkflowByIdSQL = `
+    SELECT
+      rowid as id,
+      role_id,
+      playbook,
+      sequence,
+      enforce_tw,
+      pause_after,
+      final
+    FROM
+      workflows
+    WHERE
+      rowid = ?`
+
+  const selectWorkflowById = (id) => {
+    return new Promise((resolve, reject) => {
+      dbConn.get(selectWorkflowByIdSQL, id, (err, row) => {
+        if (err) return reject(err)
+        resolve(row)
+      })
+    })
+  }
+
+  const selectWorkflowsSQL = `
+    SELECT
+      rowid as id,
+      role_id,
+      playbook,
+      sequence,
+      enforce_tw,
+      pause_after,
+      final
+    FROM
+      workflows`
+
+  const selectWorkflows = () => {
+    return new Promise((resolve, reject) => {
+      dbConn.all(selectWorkflowsSQL, (err, rows) => {
+        if (err) return reject(err)
+        resolve(rows)
+      })
+    })
+  }
+
+  const selectRoleWorkflowsSQL = `
+    SELECT
+      rowid as id,
+      role_id,
+      playbook,
+      sequence,
+      enforce_tw,
+      pause_after,
+      final
+    FROM
+      workflows
+    WHERE
+      role_id = ?
+    ORDER BY
+      sequence ASC`
+
+  const selectRoleWorkflows = (roleId) => {
+    return new Promise((resolve, reject) => {
+      dbConn.all(selectRoleWorkflowsSQL, roleId, (err, rows) => {
+        if (err) return reject(err)
+        resolve(rows)
+      })
+    })
+  }
+
+  const selectNextRoleWorkflowSQL = `
+    SELECT
+      rowid as id,
+      role_id,
+      playbook,
+      sequence,
+      enforce_tw,
+      pause_after,
+      final
+    FROM
+      workflows
+    WHERE
+      role_id = ?
+      AND sequence > ?
+    ORDER BY
+      sequence ASC`
+
+  const selectNextRoleWorkflow = (roleId, sequence) => {
+    return new Promise((resolve, reject) => {
+      dbConn.all(selectNextRoleWorkflowSQL, roleId, sequence, (err, rows) => {
+        if (err) return reject(err)
+        resolve(rows[0])
       })
     })
   }
@@ -585,6 +805,26 @@ module.exports = (function () {
     })
   }
 
+  const updateWorkflowSQL = `
+    UPDATE workflows SET
+      role_id = ?,
+      playbook = ?,
+      sequence = ?,
+      enforce_tw = ?,
+      pause_after = ?,
+      final = ?
+    WHERE
+      rowid = ?`
+
+  const updateWorkflow = (id, roleId, playbook, sequence, enforceTW, pause, finalStep) => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(updateWorkflowSQL, roleId, playbook, sequence, enforceTW, pause, finalStep, id, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
   var mod = {
     changeUserPassword: changeUserPassword,
     deleteApplications: deleteApplications,
@@ -595,12 +835,15 @@ module.exports = (function () {
     deleteApplicationRoles: deleteApplicationRoles,
     deleteReleaseDeployments: deleteReleaseDeployments,
     deleteRoleDeployments: deleteRoleDeployments,
+    deleteRoleWorkflows: deleteRoleWorkflows,
     deleteUser: deleteUser,
+    deleteWorkflow: deleteWorkflow,
     insertApplication: insertApplication,
     insertApplicationRole: insertApplicationRole,
     insertDeployment: insertDeployment,
     insertRelease: insertRelease,
     insertUser: insertUser,
+    insertWorkflow: insertWorkflow,
     selectAllApplications: selectAllApplications,
     selectApplicationById: selectApplicationById,
     selectApplicationReleaseById: selectApplicationReleaseById,
@@ -608,17 +851,25 @@ module.exports = (function () {
     selectApplicationReleases: selectApplicationReleases,
     selectApplicationRoleById: selectApplicationRoleById,
     selectApplicationRoles: selectApplicationRoles,
+    selectDeployments: selectDeployments,
     selectLatestApplication: selectLatestApplication,
     selectLatestApplicationRelease: selectLatestApplicationRelease,
     selectLatestApplicationRole: selectLatestApplicationRole,
+    selectLatestDeployment: selectLatestDeployment,
     selectLatestUser: selectLatestUser,
+    selectLatestWorkflow: selectLatestWorkflow,
+    selectNextRoleWorkflow: selectNextRoleWorkflow,
+    selectRoleWorkflows: selectRoleWorkflows,
     selectUserByEmail: selectUserByEmail,
     selectUserById: selectUserById,
     selectUsers: selectUsers,
+    selectWorkflowById: selectWorkflowById,
+    selectWorkflows: selectWorkflows,
     updateApplication: updateApplication,
     updateApplicationRelease: updateApplicationRelease,
     updateApplicationRole: updateApplicationRole,
-    updateUser: updateUser
+    updateUser: updateUser,
+    updateWorkflow: updateWorkflow
   }
 
   return mod
