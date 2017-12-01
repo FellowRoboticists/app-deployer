@@ -18,6 +18,124 @@ module.exports = (function () {
     })
   }
 
+  const createApplicationsTableSQL = `
+    CREATE TABLE IF NOT EXISTS applications (
+      rowid INTEGER NOT NULL,
+      name TEXT UNIQUE,
+      PRIMARY KEY (rowid))`
+
+  const createApplicationsTable = () => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(createApplicationsTableSQL, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
+  const createDeploymentsTableSQL = `
+    CREATE TABLE IF NOT EXISTS deployments (
+      rowid INTEGER NOT NULL,
+      release_id INTEGER, 
+      role_id INTEGER, 
+      override_token TEXT, 
+      step INTEGER, 
+      status INTEGER, 
+      created_at INTEGER, 
+      PRIMARY KEY (rowid),
+      CONSTRAINT uniq_deployment UNIQUE (release_id, role_id),
+      FOREIGN KEY(release_id) REFERENCES releases(rowid) ON DELETE CASCADE, 
+      FOREIGN KEY(role_id) REFERENCES roles(rowid) ON DELETE CASCADE)`
+
+  const createDeploymentsTable = () => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(createDeploymentsTableSQL, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
+  const createReleasesTableSQL = `
+    CREATE TABLE IF NOT EXISTS releases (
+      rowid INTEGER NOT NULL,
+      application_id INTEGER, 
+      version TEXT, 
+      tarball TEXT, 
+      seedfile TEXT, 
+      created_at INTEGER, 
+      PRIMARY KEY (rowid),
+      CONSTRAINT uniq_version UNIQUE (application_id, version), 
+      FOREIGN KEY(application_id) REFERENCES applications(rowid) ON DELETE CASCADE)`
+
+  const createReleasesTable = () => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(createReleasesTableSQL, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
+  const createRolesTableSQL = `
+    CREATE TABLE IF NOT EXISTS roles (
+      rowid INTEGER NOT NULL,
+      application_id INTEGER, 
+      role TEXT, 
+      active_server TEXT, 
+      time_window TEXT, 
+      PRIMARY KEY (rowid),
+      CONSTRAINT uniq_role UNIQUE (application_id, role), 
+      FOREIGN KEY (application_id) REFERENCES applications(rowid) ON DELETE CASCADE)`
+
+  const createRolesTable = () => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(createRolesTableSQL, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
+  const createUsersTableSQL = `
+    CREATE TABLE IF NOT EXISTS users (
+      rowid INTEGER NOT NULL,
+      email TEXT UNIQUE, 
+      password TEXT, 
+      user_role TEXT, 
+      name TEXT,
+      PRIMARY KEY (rowid))`
+
+  const createUsersTable = () => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(createUsersTableSQL, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
+  const createWorkflowsTableSQL = `
+    CREATE TABLE IF NOT EXISTS workflows (
+      rowid INTEGER NOT NULL,
+      role_id INTEGER, 
+      playbook TEXT, 
+      sequence INTEGER, 
+      enforce_tw INTEGER, 
+      pause_after INTEGER, 
+      final INTEGER, 
+      PRIMARY KEY (rowid),
+      FOREIGN KEY(role_id) REFERENCES roles(rowid) ON DELETE CASCADE)`
+
+  const createWorkflowsTable = () => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(createWorkflowsTableSQL, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
   const deleteApplicationsSQL = `
     DELETE FROM applications
     WHERE
@@ -285,6 +403,16 @@ module.exports = (function () {
         resolve()
       })
     })
+  }
+
+  const prepDB = () => {
+    return createUsersTable()
+      .then(() => createApplicationsTable())
+      .then(() => createRolesTable())
+      .then(() => createReleasesTable())
+      .then(() => createDeploymentsTable())
+      .then(() => createWorkflowsTable())
+      .then(() => foreignKeysOn())
   }
 
   const selectAllApplicationsSQL = `
@@ -829,8 +957,26 @@ module.exports = (function () {
     })
   }
 
+  const foreignKeysOnSQL = `
+    PRAGMA foreign_keys = ON`
+
+  const foreignKeysOn = () => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(foreignKeysOnSQL, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
   var mod = {
     changeUserPassword: changeUserPassword,
+    createApplicationsTable: createApplicationsTable,
+    createDeploymentsTable: createDeploymentsTable,
+    createReleasesTable: createRolesTable,
+    createRolesTable: createReleasesTable,
+    createUsersTable: createUsersTable,
+    createWorkflowsTable: createWorkflowsTable,
     deleteApplications: deleteApplications,
     deleteApplicationDeployments: deleteApplicationDeployments,
     deleteApplicationRelease: deleteApplicationRelease,
@@ -842,12 +988,14 @@ module.exports = (function () {
     deleteRoleWorkflows: deleteRoleWorkflows,
     deleteUser: deleteUser,
     deleteWorkflow: deleteWorkflow,
+    foreignKeysOn: foreignKeysOn,
     insertApplication: insertApplication,
     insertApplicationRole: insertApplicationRole,
     insertDeployment: insertDeployment,
     insertRelease: insertRelease,
     insertUser: insertUser,
     insertWorkflow: insertWorkflow,
+    prepDB: prepDB,
     selectAllApplications: selectAllApplications,
     selectApplicationById: selectApplicationById,
     selectApplicationReleaseById: selectApplicationReleaseById,

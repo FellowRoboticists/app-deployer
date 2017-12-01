@@ -12,9 +12,9 @@ logging.baseLogging()
 
 require('./bootstrap')
 
-const db = require('./app/utility/db')
+const sqlSVC = require('./app/sql/sql-service')
 
-db.prepDB()
+sqlSVC.prepDB()
   .then(() => winston.log('info', 'db prepped'))
   .catch((err) => winston.error('error', err.stack || err))
 

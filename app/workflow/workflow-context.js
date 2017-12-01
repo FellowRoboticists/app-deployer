@@ -4,7 +4,6 @@ module.exports = (function () {
   const sqlSVC = require('../sql/sql-service')
 
   const createWorkflow = (workflowParams) => {
-    console.log(`### ${JSON.stringify(workflowParams)}`)
     return sqlSVC.insertWorkflow(workflowParams.role_id, workflowParams.playbook, workflowParams.sequence, workflowParams.enforce_tw, workflowParams.pause_after, workflowParams.final)
       .then(() => sqlSVC.selectLatestWorkflow())
   }

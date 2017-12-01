@@ -12,9 +12,6 @@ module.exports = (function () {
 
   const deleteApplication = (application) => {
     return releaseSVC.deleteApplicationTarballs(application.id)
-      .then(() => sqlSVC.deleteApplicationReleases(application.id))
-      .then(() => sqlSVC.deleteApplicationDeployments(application.id))
-      .then(() => sqlSVC.deleteApplicationRoles(application.id))
       .then(() => sqlSVC.deleteApplications(application.id))
       .then(() => application)
   }
@@ -75,8 +72,7 @@ module.exports = (function () {
   }
 
   const deleteApplicationRole = (role) => {
-    return sqlSVC.deleteRoleDeployments(role.id)
-      .then(() => sqlSVC.deleteApplicationRole(role.id))
+    return sqlSVC.deleteApplicationRole(role.id)
       .then(() => role)
   }
 
