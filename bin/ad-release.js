@@ -65,7 +65,6 @@ const createRelease = (appId, version, tarball, seedfile, token) => {
       }
     }
   }
-  console.log(`Options: ${options}`)
   request(options)
     .then((release) => {
       console.log(`New release: ${release.id} - ${release.application_id}, ${release.version}, ${release.tarball}, ${release.created_at}`)

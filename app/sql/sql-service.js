@@ -459,6 +459,30 @@ module.exports = (function () {
     })
   }
 
+  const selectDeploymentByRoleReleaseSQL = `
+    SELECT
+      rowid AS id,
+      release_id,
+      role_id,
+      override_token,
+      step,
+      status,
+      created_at
+    FROM
+      deployments
+    WHERE
+      release_id = ?
+      AND role_id = ?`
+
+  const selectDeploymentByRoleRelease = (releaseId, roleId) => {
+    return new Promise((resolve, reject) => {
+      dbConn.get(selectDeploymentByRoleReleaseSQL, releaseId, roleId, (err, row) => {
+        if (err) return reject(err)
+        resolve(row)
+      })
+    })
+  }
+
   const selectApplicationByIdSQL = `
     SELECT 
       rowid AS id, 
@@ -534,6 +558,44 @@ module.exports = (function () {
       dbConn.all(selectApplicationReleasesSQL, appId, (err, rows) => {
         if (err) return reject(err)
         resolve(rows)
+      })
+    })
+  }
+
+  const selectApplicationReleaseByNameVersionSQL = `
+    SELECT
+      apps.rowid AS application_id,
+      rels.rowid AS release_id
+    FROM
+      applications apps INNER JOIN releases rels ON rels.application_id = apps.rowid
+    WHERE
+      apps.name = ?
+      AND rels.version = ?`
+
+  const selectApplicationReleaseByNameVersion = (application, appVersion) => {
+    return new Promise((resolve, reject) => {
+      dbConn.get(selectApplicationReleaseByNameVersionSQL, application, appVersion, (err, row) => {
+        if (err) return reject(err)
+        resolve(row)
+      })
+    })
+  }
+
+  const selectApplicationRoleByAppRoleSQL = `
+    SELECT
+      apps.rowid AS application_id,
+      rols.rowid AS role_id
+    FROM
+      applications apps INNER JOIN roles rols ON rols.application_id = apps.rowid
+    WHERE
+      apps.name = ?
+      AND rols.role = ?`
+
+  const selectApplicationRoleByAppRole = (application, role) => {
+    return new Promise((resolve, reject) => {
+      dbConn.get(selectApplicationRoleByAppRoleSQL, application, role, (err, row) => {
+        if (err) return reject(err)
+        resolve(row)
       })
     })
   }
@@ -800,6 +862,30 @@ module.exports = (function () {
     })
   }
 
+  const selectWorkflowByRoleSequenceSQL = `
+    SELECT
+      rowid as id,
+      role_id,
+      playbook,
+      sequence,
+      enforce_tw,
+      pause_after,
+      final
+    FROM
+      workflows
+    WHERE
+      role_id = ?
+      AND sequence = ?`
+
+  const selectWorkflowByRoleSequence = (roleId, sequence) => {
+    return new Promise((resolve, reject) => {
+      dbConn.get(selectWorkflowByRoleSequenceSQL, roleId, sequence, (err, row) => {
+        if (err) return reject(err)
+        resolve(row)
+      })
+    })
+  }
+
   const selectWorkflowsSQL = `
     SELECT
       rowid as id,
@@ -921,6 +1007,21 @@ module.exports = (function () {
     })
   }
 
+  const updateDeploymentIncrementStepSQL = `
+    UPDATE deployments SET
+      step = step + 1
+    WHERE
+      rowid = ?`
+
+  const updateDeploymentIncrementStep = (id) => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(updateDeploymentIncrementStepSQL, id, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
   const updateUserSQL = `
     UPDATE users SET
       name = ?,
@@ -1001,9 +1102,12 @@ module.exports = (function () {
     selectApplicationReleaseById: selectApplicationReleaseById,
     selectApplicationReleaseIds: selectApplicationReleaseIds,
     selectApplicationReleases: selectApplicationReleases,
+    selectApplicationReleaseByNameVersion: selectApplicationReleaseByNameVersion,
+    selectApplicationRoleByAppRole: selectApplicationRoleByAppRole,
     selectApplicationRoleById: selectApplicationRoleById,
     selectApplicationRoles: selectApplicationRoles,
     selectDeployments: selectDeployments,
+    selectDeploymentByRoleRelease: selectDeploymentByRoleRelease,
     selectLatestApplication: selectLatestApplication,
     selectLatestApplicationRelease: selectLatestApplicationRelease,
     selectLatestApplicationRole: selectLatestApplicationRole,
@@ -1016,10 +1120,12 @@ module.exports = (function () {
     selectUserById: selectUserById,
     selectUsers: selectUsers,
     selectWorkflowById: selectWorkflowById,
+    selectWorkflowByRoleSequence: selectWorkflowByRoleSequence,
     selectWorkflows: selectWorkflows,
     updateApplication: updateApplication,
     updateApplicationRelease: updateApplicationRelease,
     updateApplicationRole: updateApplicationRole,
+    updateDeploymentIncrementStep: updateDeploymentIncrementStep,
     updateUser: updateUser,
     updateWorkflow: updateWorkflow
   }

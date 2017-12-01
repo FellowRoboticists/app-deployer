@@ -17,6 +17,10 @@ program
   .option('-e, --release-id <releaseId>', 'The id of the release of the deployment: required')
   .option('-l, --list', 'List the deployments. Specify --role-id or --release-id')
   .option('-u, --update', 'Update the deployment')
+  .option('-g, --do-deploy', 'Deploy the specified application/version')
+  .option('-a, --application <application>', 'The application to deploy')
+  .option('-q, --app-version <appVersion>', 'The version of the application to deploy')
+  .option('-n, --role <role>', 'The role of the application to which to deploy')
   .option('-s, --status <status>', 'Status for the deployment. Use with --update')
   .option('-d, --delete', 'Delete a deployment')
   .option('-i, --id <id>', 'Id of the role. Use with --delete and --update')
@@ -28,6 +32,27 @@ const baseUri = () => {
 
 const deploymentUri = (deploymentId) => {
   return `${baseUri()}/${deploymentId}`
+}
+
+const doDeployment = (application, appVersion, role, token) => {
+  if (!(application && appVersion)) {
+    console.error('Must specify the application and version to deploy')
+    process.exit(1)
+  }
+  let options = {
+    method: 'POST',
+    url: baseUri() + '/deploy',
+    json: true,
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: { application: application, appVersion: appVersion, role: role }
+  }
+  request(options)
+    .then((deployment) => {
+      console.log(`New deployment: ${deployment.id} - ${deployment.release_id}, ${deployment.role_id}, ${deployment.status}`)
+    })
+    .catch(console.error)
 }
 
 const createDeployment = (releaseId, roleId, token) => {
@@ -140,6 +165,8 @@ readToken()
       listDeployments(program.releaseId, program.roleId, token)
     } else if (program.delete) {
       deleteDeployment(program.id, token)
+    } else if (program.doDeploy) {
+      doDeployment(program.application, program.appVersion, program.role, token)
     }
   })
   .catch(() => console.error('Not logged in.'))
