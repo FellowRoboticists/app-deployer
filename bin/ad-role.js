@@ -6,6 +6,7 @@ const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
 const Table = require('cli-table')
+const errorSVC = require('../app/utility/error-service')
 
 program
   .version('0.0.1')
@@ -49,7 +50,7 @@ const createRole = (appId, name, server, timeWindow, token) => {
     .then((role) => {
       console.log(`New role: ${role.id} - ${role.application_id}, ${role.role}, ${role.active_server}, ${role.time_window}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const updateRole = (appId, id, name, server, timeWindow, token) => {
@@ -70,7 +71,7 @@ const updateRole = (appId, id, name, server, timeWindow, token) => {
     .then((role) => {
       console.log(`Updated role: ${role.id} - ${role.application_id}, ${role.role}, ${role.active_server}, ${role.time_window}`)
     })
-    .catch(console.err)
+    .catch(errorSVC.consoleErr)
 }
 
 const listRoles = (appId, token) => {
@@ -94,7 +95,7 @@ const listRoles = (appId, token) => {
       console.log(table.toString())
       console.log(`${roles.length} Roles`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const deleteRole = (appId, id, token) => {
@@ -114,7 +115,7 @@ const deleteRole = (appId, id, token) => {
     .then((role) => {
       console.log(`Delete role: ${role.id} - ${role.application_id}, ${role.role}, ${role.active_server}, ${role.time_window}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 if (!program.appId) {

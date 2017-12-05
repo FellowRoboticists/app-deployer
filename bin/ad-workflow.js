@@ -6,6 +6,7 @@ const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
 const Table = require('cli-table')
+const errorSVC = require('../app/utility/error-service')
 
 program
   .version('0.0.1')
@@ -58,7 +59,7 @@ const createWorkflow = (roleId, playbook, sequence, enforceTw, pauseAfter, final
     .then((workflow) => {
       console.log(`New workflow: ${workflow.id} - ${workflow.role_id}, ${workflow.playbook}, ${workflow.sequence}, ${workflow.enforce_tw}, ${workflow.pause_after}, ${workflow.final}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const updateWorkflow = (id, roleId, playbook, sequence, enforceTw, pauseAfter, finalStep, token) => {
@@ -90,7 +91,7 @@ const updateWorkflow = (id, roleId, playbook, sequence, enforceTw, pauseAfter, f
     .then((workflow) => {
       console.log(`Updated workflow: ${workflow.id} - ${workflow.role_id}, ${workflow.playbook}, ${workflow.sequence}, ${workflow.enforce_tw}, ${workflow.pause_after}, ${workflow.final}`)
     })
-    .catch(console.err)
+    .catch(errorSVC.consoleErr)
 }
 
 const listWorkflows = (roleId, token) => {
@@ -117,7 +118,7 @@ const listWorkflows = (roleId, token) => {
       console.log(table.toString())
       console.log(`${workflows.length} Workflows`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const deleteWorkflow = (id, token) => {
@@ -137,7 +138,7 @@ const deleteWorkflow = (id, token) => {
     .then((workflow) => {
       console.log(`Deleted workflow: ${workflow.id} - ${workflow.role_id}, ${workflow.playbook}, ${workflow.sequence}, ${workflow.enforce_tw}, ${workflow.pause_after}, ${workflow.final}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const readToken = () => {

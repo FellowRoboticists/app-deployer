@@ -7,6 +7,7 @@ const path = require('path')
 
 const request = require('request-promise-native')
 const program = require('commander')
+const errorSVC = require('../app/utility/error-service')
 
 program
   .version('0.0.1')
@@ -16,8 +17,6 @@ program
   .parse(process.argv)
 
 const user = process.argv[2]
-
-console.log(`User: ${user}`)
 
 if (!user) {
   console.error('First argument must be your email address!')
@@ -56,6 +55,4 @@ getPassword()
           .then(() => console.log('Login successful.'))
       })
   })
-  .catch((err) => {
-    console.error(err.stack || err)
-  })
+  .catch(errorSVC.consoleError)

@@ -6,6 +6,7 @@ const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
 const Table = require('cli-table')
+const errorSVC = require('../app/utility/error-service')
 
 program
   .version('0.0.1')
@@ -46,7 +47,7 @@ const createApplication = (name, token) => {
     .then((application) => {
       console.log(`New application: ${application.id} - ${application.name}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const updateApplication = (id, name, token) => {
@@ -71,7 +72,7 @@ const updateApplication = (id, name, token) => {
     .then((application) => {
       console.log(`Updated application: ${application.id} - ${application.name}`)
     })
-    .catch(console.err)
+    .catch(errorSVC.consoleError)
 }
 
 const listApplications = (token) => {
@@ -94,7 +95,7 @@ const listApplications = (token) => {
       console.log(table.toString())
       console.log(`${applications.length} Applications`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const deleteApplication = (id, token) => {
@@ -114,7 +115,7 @@ const deleteApplication = (id, token) => {
     .then((application) => {
       console.log(`Delete application: ${application.id} - ${application.name}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const readToken = () => {

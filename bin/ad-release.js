@@ -6,6 +6,7 @@ const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
 const Table = require('cli-table')
+const errorSVC = require('../app/utility/error-service')
 
 program
   .version('0.0.1')
@@ -69,7 +70,7 @@ const createRelease = (appId, version, tarball, seedfile, token) => {
     .then((release) => {
       console.log(`New release: ${release.id} - ${release.application_id}, ${release.version}, ${release.tarball}, ${release.created_at}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const updateRelease = (appId, id, version, token) => {
@@ -90,7 +91,7 @@ const updateRelease = (appId, id, version, token) => {
     .then((release) => {
       console.log(`Updated release: ${release.id} - ${release.application_id}, ${release.version}, ${release.tarball}, ${release.created_at}`)
     })
-    .catch(console.err)
+    .catch(errorSVC.consoleErr)
 }
 
 const listReleases = (appId, token) => {
@@ -114,7 +115,7 @@ const listReleases = (appId, token) => {
       console.log(table.toString())
       console.log(`${releases.length} Releases`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const deleteRelease = (appId, id, token) => {
@@ -134,7 +135,7 @@ const deleteRelease = (appId, id, token) => {
     .then((release) => {
       console.log(`Delete release: ${release.id} - ${release.application_id}, ${release.version}, ${release.tarball}, ${release.created_at}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 if (!program.appId) {

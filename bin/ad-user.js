@@ -7,6 +7,7 @@ const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
 const Table = require('cli-table')
+const errorSVC = require('../app/utility/error-service')
 
 program
   .version('0.0.1')
@@ -53,7 +54,7 @@ const createUser = (email, name, role, password) => {
     .then((user) => {
       console.log(`New user: ${user.id} - ${user.email}, ${user.name}, ${user.user_role}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const updateUser = (id, name, role, token) => {
@@ -78,7 +79,7 @@ const updateUser = (id, name, role, token) => {
     .then((user) => {
       console.log(`Updated user: ${user.id} - ${user.email}, ${user.name}, ${user.user_role}`)
     })
-    .catch(console.err)
+    .catch(errorSVC.consoleErr)
 }
 
 const listUsers = (token) => {
@@ -101,7 +102,7 @@ const listUsers = (token) => {
       console.log(table.toString())
       console.log(`${users.length} Users`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const deleteUser = (id, token) => {
@@ -121,7 +122,7 @@ const deleteUser = (id, token) => {
     .then((user) => {
       console.log(`Delete user: ${user.id} - ${user.id} - ${user.email}, ${user.name}, ${user.user_role}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const getPassword = (prompt) => {

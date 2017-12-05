@@ -9,7 +9,13 @@ router.post(
   '/',
   function __login (req, res, next) {
     sessionCTX.login(req.body.email, req.body.password)
-      .then((token) => res.json({ token: token }))
+      .then((token) => {
+        if (token) {
+          res.json({ token: token })
+        } else {
+          res.status(401).send('Invalid credentials')
+        }
+      })
       .catch(next)
   }
 )

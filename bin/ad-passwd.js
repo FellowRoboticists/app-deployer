@@ -6,6 +6,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
+const errorSVC = require('../app/utility/error-service')
 
 program
   .version('0.0.1')
@@ -82,4 +83,4 @@ readToken()
         changePassword(program.id, currentPassword, newPassword, token)
       })
   })
-  .catch(console.error)
+  .catch(errorSVC.consoleError)

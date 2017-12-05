@@ -6,6 +6,7 @@ const path = require('path')
 const request = require('request-promise-native')
 const program = require('commander')
 const Table = require('cli-table')
+const errorSVC = require('../app/utility/error-service')
 
 program
   .version('0.0.1')
@@ -52,7 +53,7 @@ const doDeployment = (application, appVersion, role, token) => {
     .then((deployment) => {
       console.log(`New deployment: ${deployment.id} - ${deployment.release_id}, ${deployment.role_id}, ${deployment.status}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const createDeployment = (releaseId, roleId, token) => {
@@ -73,7 +74,7 @@ const createDeployment = (releaseId, roleId, token) => {
     .then((deployment) => {
       console.log(`New deployment: ${deployment.id} - ${deployment.release_id}, ${deployment.role_id}, ${deployment.status}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const updateDeployment = (id, status, token) => {
@@ -94,7 +95,7 @@ const updateDeployment = (id, status, token) => {
     .then((deployment) => {
       console.log(`Updated deployment: ${deployment.id} - ${deployment.release_id}, ${deployment.role_id}, ${deployment.status}`)
     })
-    .catch(console.err)
+    .catch(errorSVC.consoleErr)
 }
 
 const listDeployments = (releaseId, roleId, token) => {
@@ -127,7 +128,7 @@ const listDeployments = (releaseId, roleId, token) => {
       console.log(table.toString())
       console.log(`${deployments.length} Deployments`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const deleteDeployment = (id, token) => {
@@ -147,7 +148,7 @@ const deleteDeployment = (id, token) => {
     .then((deployment) => {
       console.log(`Deleted deployment: ${deployment.id} - ${deployment.release_id}, ${deployment.role_id}, ${deployment.status}`)
     })
-    .catch(console.error)
+    .catch(errorSVC.consoleError)
 }
 
 const readToken = () => {
