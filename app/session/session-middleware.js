@@ -21,6 +21,7 @@ module.exports = (function () {
 
     if (!payload) return res.status(401).send('Invalid JWT payload')
 
+    req.user_id = payload.user_id
     req.user_email = payload.email
     req.user_role = payload.role
     req.user_name = payload.name

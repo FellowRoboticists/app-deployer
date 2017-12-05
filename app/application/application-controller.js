@@ -156,7 +156,7 @@ router.post(
     }
     let tarball = req.files['tarball'][0]
     let seedfile = req.files['seedfile'] ? req.files['seedfile'][0] : null
-    applicationCTX.createApplicationRelease(req.application, tarball, seedfile, req.body)
+    applicationCTX.createApplicationRelease(req.application, tarball, seedfile, req.body, req.user_id)
       .then((release) => res.json(release))
       .catch(next)
   }
@@ -167,7 +167,7 @@ router.put(
   sessionMW.verifyJwtToken,
   sessionMW.isAuthorized(['admin', 'deployer']),
   function __updateApplicationRelease (req, res, next) {
-    applicationCTX.updateApplicationRelease(req.application, req.release, req.body)
+    applicationCTX.updateApplicationRelease(req.application, req.release, req.body, req.user_id)
       .then((release) => res.json(release))
       .catch(next)
   }

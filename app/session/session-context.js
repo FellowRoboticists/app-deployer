@@ -18,11 +18,12 @@ module.exports = (function () {
         }
         // Build the JWT token and return it...
         let payload = {
+          user_id: user.id,
           email: user.email,
           role: user.user_role,
           name: user.name
         }
-        let token = jwt.sign(payload, appDeployConfig.environment.jwtSecret, { expiresIn: 60 * 60 })
+        let token = jwt.sign(payload, appDeployConfig.environment.jwtSecret, { expiresIn: appDeployConfig.environment.jwtTimeout })
         resolve(token)
       })
     })

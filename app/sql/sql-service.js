@@ -21,7 +21,7 @@ module.exports = (function () {
   const createApplicationsTableSQL = `
     CREATE TABLE IF NOT EXISTS applications (
       rowid INTEGER NOT NULL,
-      name TEXT UNIQUE,
+      name TEXT NOT NULL UNIQUE,
       PRIMARY KEY (rowid))`
 
   const createApplicationsTable = () => {
@@ -36,16 +36,19 @@ module.exports = (function () {
   const createDeploymentsTableSQL = `
     CREATE TABLE IF NOT EXISTS deployments (
       rowid INTEGER NOT NULL,
-      release_id INTEGER, 
-      role_id INTEGER, 
+      release_id INTEGER NOT NULL, 
+      role_id INTEGER NOT NULL, 
       override_token TEXT, 
       step INTEGER, 
-      status INTEGER, 
-      created_at INTEGER, 
+      status INTEGER NOT NULL CHECK (status IN (0,1,2)), 
+      message TEXT,
+      user_id INTEGER NOT NULL,
+      created_at INTEGER NOT NULL, 
       PRIMARY KEY (rowid),
       CONSTRAINT uniq_deployment UNIQUE (release_id, role_id),
       FOREIGN KEY(release_id) REFERENCES releases(rowid) ON DELETE CASCADE, 
-      FOREIGN KEY(role_id) REFERENCES roles(rowid) ON DELETE CASCADE)`
+      FOREIGN KEY(role_id) REFERENCES roles(rowid) ON DELETE CASCADE,
+      FOREIGN KEY(user_id) REFERENCES users(rowid) ON DELETE CASCADE)`
 
   const createDeploymentsTable = () => {
     return new Promise((resolve, reject) => {
@@ -59,14 +62,16 @@ module.exports = (function () {
   const createReleasesTableSQL = `
     CREATE TABLE IF NOT EXISTS releases (
       rowid INTEGER NOT NULL,
-      application_id INTEGER, 
-      version TEXT, 
-      tarball TEXT, 
+      application_id INTEGER NOT NULL, 
+      version TEXT NOT NULL, 
+      tarball TEXT NOT NULL, 
       seedfile TEXT, 
-      created_at INTEGER, 
+      user_id INTEGER NOT NULL,
+      created_at INTEGER NOT NULL, 
       PRIMARY KEY (rowid),
       CONSTRAINT uniq_version UNIQUE (application_id, version), 
-      FOREIGN KEY(application_id) REFERENCES applications(rowid) ON DELETE CASCADE)`
+      FOREIGN KEY(application_id) REFERENCES applications(rowid) ON DELETE CASCADE,
+      FOREIGN KEY(user_id) REFERENCES users(rowid) ON DELETE CASCADE)`
 
   const createReleasesTable = () => {
     return new Promise((resolve, reject) => {
@@ -80,9 +85,9 @@ module.exports = (function () {
   const createRolesTableSQL = `
     CREATE TABLE IF NOT EXISTS roles (
       rowid INTEGER NOT NULL,
-      application_id INTEGER, 
-      role TEXT, 
-      active_server TEXT, 
+      application_id INTEGER NOT NULL, 
+      role TEXT NOT NULL, 
+      active_server TEXT NOT NULL, 
       time_window TEXT, 
       PRIMARY KEY (rowid),
       CONSTRAINT uniq_role UNIQUE (application_id, role), 
@@ -100,10 +105,11 @@ module.exports = (function () {
   const createUsersTableSQL = `
     CREATE TABLE IF NOT EXISTS users (
       rowid INTEGER NOT NULL,
-      email TEXT UNIQUE, 
-      password TEXT, 
-      user_role TEXT, 
-      name TEXT,
+      email TEXT NOT NULL UNIQUE, 
+      password TEXT NOT NULL, 
+      user_role TEXT NOT NULL CHECK (user_role IN ('admin', 'deployer', 'reporter')), 
+      name TEXT NOT NULL,
+      enabled INTEGER NOT NULL CHECK (enabled IN (0,1)),
       PRIMARY KEY (rowid))`
 
   const createUsersTable = () => {
@@ -118,12 +124,12 @@ module.exports = (function () {
   const createWorkflowsTableSQL = `
     CREATE TABLE IF NOT EXISTS workflows (
       rowid INTEGER NOT NULL,
-      role_id INTEGER, 
-      playbook TEXT, 
-      sequence INTEGER, 
-      enforce_tw INTEGER, 
-      pause_after INTEGER, 
-      final INTEGER, 
+      role_id INTEGER NOT NULL, 
+      playbook TEXT NOT NULL, 
+      sequence INTEGER NOT NULL, 
+      enforce_tw INTEGER NOT NULL CHECK (enforce_tw IN (0,1)), 
+      pause_after INTEGER NOT NULL CHECK (pause_after IN (0,1)), 
+      final INTEGER NOT NULL CHECK (final IN (0,1)), 
       PRIMARY KEY (rowid),
       FOREIGN KEY(role_id) REFERENCES roles(rowid) ON DELETE CASCADE)`
 
@@ -331,14 +337,15 @@ module.exports = (function () {
       role_id, 
       step,
       status, 
+      user_id,
       created_at
     ) VALUES (
-      ?,?,0,0,DATETIME('now')
+      ?,?,0,0,?,DATETIME('now')
     )`
 
-  const insertDeployment = (releaseId, roleId) => {
+  const insertDeployment = (releaseId, roleId, userId) => {
     return new Promise((resolve, reject) => {
-      dbConn.run(insertDeploymentSQL, releaseId, roleId, (err) => {
+      dbConn.run(insertDeploymentSQL, releaseId, roleId, userId, (err) => {
         if (err) return reject(err)
         resolve()
       })
@@ -351,14 +358,15 @@ module.exports = (function () {
       version, 
       tarball, 
       seedfile,
+      user_id,
       created_at
     ) VALUES (
-      ?, ?, ?, ?, DATETIME('now')
+      ?, ?, ?, ?, ?, DATETIME('now')
     )`
 
-  const insertRelease = (appId, version, tarball, seedfile) => {
+  const insertRelease = (appId, version, tarball, seedfile, userId) => {
     return new Promise((resolve, reject) => {
-      dbConn.run(insertReleaseSQL, appId, version, tarball, seedfile, (err) => {
+      dbConn.run(insertReleaseSQL, appId, version, tarball, seedfile, userId, (err) => {
         if (err) return reject(err)
         resolve()
       })
@@ -370,14 +378,15 @@ module.exports = (function () {
       email,
       name,
       user_role,
+      enabled,
       password
     ) VALUES (
-      ?, ?, ?, ?
+      ?, ?, ?, ?, ?
     )`
 
   const insertUser = (userParams, encryptedPassword) => {
     return new Promise((resolve, reject) => {
-      dbConn.run(insertUserSQL, userParams.email, userParams.name, userParams.user_role, encryptedPassword, (err) => {
+      dbConn.run(insertUserSQL, userParams.email, userParams.name, userParams.user_role, userParams.enabled, encryptedPassword, (err) => {
         if (err) return reject(err)
         resolve()
       })
@@ -436,6 +445,7 @@ module.exports = (function () {
       deps.rowid AS id,
       deps.step,
       deps.status,
+      deps.message,
       deps.created_at,
       rols.role,
       rols.active_server,
@@ -525,6 +535,7 @@ module.exports = (function () {
       version,
       tarball,
       seedfile,
+      user_id,
       created_at
     FROM
       releases
@@ -547,6 +558,7 @@ module.exports = (function () {
       version,
       tarball,
       seedfile,
+      user_id,
       created_at
     FROM
       releases
@@ -584,7 +596,8 @@ module.exports = (function () {
   const selectApplicationRoleByAppRoleSQL = `
     SELECT
       apps.rowid AS application_id,
-      rols.rowid AS role_id
+      rols.rowid AS role_id,
+      rols.time_window
     FROM
       applications apps INNER JOIN roles rols ON rols.application_id = apps.rowid
     WHERE
@@ -649,6 +662,7 @@ module.exports = (function () {
       version, 
       tarball, 
       seedfile,
+      user_id,
       created_at 
     FROM 
       releases 
@@ -739,7 +753,8 @@ module.exports = (function () {
       rowid AS id,
       email,
       name,
-      user_role
+      user_role,
+      enabled
     FROM
       users
     ORDER BY
@@ -785,6 +800,7 @@ module.exports = (function () {
       email,
       name,
       user_role,
+      enabled,
       password
     FROM
       users
@@ -806,7 +822,8 @@ module.exports = (function () {
       email,
       password,
       name,
-      user_role
+      user_role,
+      enabled
     FROM
       users
     WHERE
@@ -826,7 +843,8 @@ module.exports = (function () {
       rowid AS id,
       email,
       name,
-      user_role
+      user_role,
+      enabled
     FROM
       users`
 
@@ -976,13 +994,14 @@ module.exports = (function () {
   const updateApplicationReleaseSQL = `
     UPDATE releases SET
       application_id = ?,
-      version = ?
+      version = ?,
+      user_id = ?
     WHERE
       rowid = ?`
 
-  const updateApplicationRelease = (appId, releaseId, releaseParams) => {
+  const updateApplicationRelease = (appId, releaseId, releaseParams, userId) => {
     return new Promise((resolve, reject) => {
-      dbConn.run(updateApplicationReleaseSQL, appId, releaseParams.version, releaseId, (err) => {
+      dbConn.run(updateApplicationReleaseSQL, appId, releaseParams.version, userId, releaseId, (err) => {
         if (err) return reject(err)
         resolve()
       })
@@ -1009,13 +1028,47 @@ module.exports = (function () {
 
   const updateDeploymentIncrementStepSQL = `
     UPDATE deployments SET
-      step = step + 1
+      user_id = ?,
+      step = step + 1,
+      status = 0,
+      message = NULL
     WHERE
       rowid = ?`
 
-  const updateDeploymentIncrementStep = (id) => {
+  const updateDeploymentIncrementStep = (id, userId) => {
     return new Promise((resolve, reject) => {
-      dbConn.run(updateDeploymentIncrementStepSQL, id, (err) => {
+      dbConn.run(updateDeploymentIncrementStepSQL, userId, id, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
+  const updateDeploymentStatusSQL = `
+    UPDATE deployments SET
+      status = ?,
+      message = ?
+    WHERE
+      rowid = ?`
+
+  const updateDeploymentStatus = (id, status, message) => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(updateDeploymentStatusSQL, status, message, id, (err) => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+  }
+
+  const updateDeploymentOverrideTokenSQL = `
+    UPDATE deployments SET
+      override_token = ?
+    WHERE
+      rowid = ?`
+
+  const updateDeploymentOverrideToken = (id, token) => {
+    return new Promise((resolve, reject) => {
+      dbConn.run(updateDeploymentOverrideTokenSQL, token, id, (err) => {
         if (err) return reject(err)
         resolve()
       })
@@ -1025,13 +1078,14 @@ module.exports = (function () {
   const updateUserSQL = `
     UPDATE users SET
       name = ?,
-      user_role = ?
+      user_role = ?,
+      enabled = ?
     WHERE
       rowid = ?`
 
-  const updateUser = (userId, userParams) => {
+  const updateUser = (userId, userParams, enabled) => {
     return new Promise((resolve, reject) => {
-      dbConn.run(updateUserSQL, userParams.name, userParams.user_role, userId, (err) => {
+      dbConn.run(updateUserSQL, userParams.name, userParams.user_role, enabled, userId, (err) => {
         if (err) return reject(err)
         resolve()
       })
@@ -1126,6 +1180,8 @@ module.exports = (function () {
     updateApplicationRelease: updateApplicationRelease,
     updateApplicationRole: updateApplicationRole,
     updateDeploymentIncrementStep: updateDeploymentIncrementStep,
+    updateDeploymentOverrideToken: updateDeploymentOverrideToken,
+    updateDeploymentStatus: updateDeploymentStatus,
     updateUser: updateUser,
     updateWorkflow: updateWorkflow
   }

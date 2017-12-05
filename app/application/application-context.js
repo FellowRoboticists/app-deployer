@@ -33,9 +33,9 @@ module.exports = (function () {
     return sqlSVC.selectApplicationRoles(application.id)
   }
 
-  const createApplicationRelease = (application, uploadedTarball, uploadedSeedfile, releaseParams) => {
+  const createApplicationRelease = (application, uploadedTarball, uploadedSeedfile, releaseParams, userId) => {
     let seedFileName = uploadedSeedfile ? uploadedSeedfile.originalname : null
-    return sqlSVC.insertRelease(releaseParams.application_id, releaseParams.version, uploadedTarball.originalname, seedFileName)
+    return sqlSVC.insertRelease(releaseParams.application_id, releaseParams.version, uploadedTarball.originalname, seedFileName, userId)
       .then(() => sqlSVC.selectLatestApplicationRelease(releaseParams.application_id))
       .then((release) => {
         return deploySVC.saveTarball(uploadedTarball, release.id)
@@ -55,8 +55,8 @@ module.exports = (function () {
       .then(() => sqlSVC.selectLatestApplicationRole(application.id))
   }
 
-  const updateApplicationRelease = (application, release, releaseParams) => {
-    return sqlSVC.updateApplicationRelease(application.id, release.id, releaseParams)
+  const updateApplicationRelease = (application, release, releaseParams, userId) => {
+    return sqlSVC.updateApplicationRelease(application.id, release.id, releaseParams, userId)
       .then(() => sqlSVC.selectApplicationReleaseById(release.id))
   }
 

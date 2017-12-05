@@ -25,6 +25,8 @@ program
   .option('-s, --status <status>', 'Status for the deployment. Use with --update')
   .option('-d, --delete', 'Delete a deployment')
   .option('-i, --id <id>', 'Id of the role. Use with --delete and --update')
+  .option('-o, --override', 'Create an override token for the specified deployment')
+  .option('-t, --time-window <time-window', 'The time window for the override token')
   .parse(process.argv)
 
 const baseUri = () => {
@@ -120,10 +122,10 @@ const listDeployments = (releaseId, roleId, token) => {
     .then((deployments) => {
       console.log('Deployments')
       let table = new Table({
-        head: ['rowid', 'name', 'version', 'role', 'status']
+        head: ['rowid', 'name', 'version', 'role', 'step', 'status', 'message']
       })
       deployments.forEach((deployment) => {
-        table.push([deployment.id, deployment.name, deployment.version, deployment.role, deployment.status])
+        table.push([deployment.id, deployment.name, deployment.version, deployment.role, deployment.step, deployment.status, deployment.message ? deployment.message : ''])
       })
       console.log(table.toString())
       console.log(`${deployments.length} Deployments`)
@@ -151,6 +153,32 @@ const deleteDeployment = (id, token) => {
     .catch(errorSVC.consoleError)
 }
 
+const overrideTimeWindow = (application, appVersion, role, timeWindow, token) => {
+  if (!(application && appVersion && role && timeWindow)) {
+    console.error('Must specify the application and version to deploy')
+    process.exit(1)
+  }
+  let options = {
+    method: 'PUT',
+    url: baseUri() + '/override',
+    json: true,
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: {
+      application: application,
+      appVersion: appVersion,
+      role: role,
+      timeWindow: timeWindow
+    }
+  }
+  request(options)
+    .then((deployment) => {
+      console.log(`New deployment: ${deployment.id} - ${deployment.release_id}, ${deployment.role_id}, ${deployment.status}`)
+    })
+    .catch(errorSVC.consoleError)
+}
+
 const readToken = () => {
   let tokenPath = path.join(process.env.HOME, '.app-deployer/token')
   return fs.readFile(tokenPath, 'utf8')
@@ -168,6 +196,8 @@ readToken()
       deleteDeployment(program.id, token)
     } else if (program.doDeploy) {
       doDeployment(program.application, program.appVersion, program.role, token)
+    } else if (program.override) {
+      overrideTimeWindow(program.application, program.appVersion, program.role, program.timeWindow, token)
     }
   })
   .catch(() => console.error('Not logged in.'))

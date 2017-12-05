@@ -17,6 +17,7 @@ program
   .option('-c, --create', 'Create a new user')
   .option('-e, --email <email>', 'Email address. Use with --create')
   .option('-n, --name <name>', 'Specify the name of the new name. Use with --create or --update')
+  .option('-I, --disabled', 'Specify that the user be disabled; default is enabled')
   .option('-l, --list', 'List the users')
   .option('-u, --update', 'Update the user')
   .option('-d, --delete', 'Delete an user')
@@ -34,7 +35,7 @@ const userUri = (userId) => {
   return `${baseUri()}/${userId}`
 }
 
-const createUser = (email, name, role, password) => {
+const createUser = (email, name, role, enabled, password) => {
   if (!(email && name && role && password)) {
     console.error('Must specify the data for the user to create!')
     process.exit(1)
@@ -47,7 +48,8 @@ const createUser = (email, name, role, password) => {
       email: email,
       name: name,
       user_role: role,
-      password: password
+      password: password,
+      enabled: enabled
     }
   }
   request(options)
@@ -57,7 +59,7 @@ const createUser = (email, name, role, password) => {
     .catch(errorSVC.consoleError)
 }
 
-const updateUser = (id, name, role, token) => {
+const updateUser = (id, name, role, enabled, token) => {
   if (!(name && role)) {
     console.error('Must specify the name and role of the user to update!')
     process.exit(1)
@@ -73,7 +75,7 @@ const updateUser = (id, name, role, token) => {
     headers: {
       'Authorization': `Bearer ${token}`
     },
-    body: { name: name, user_role: role }
+    body: { name: name, user_role: role, enabled: enabled }
   }
   request(options)
     .then((user) => {
@@ -94,10 +96,10 @@ const listUsers = (token) => {
     .then((users) => {
       console.log('Users')
       let table = new Table({
-        head: ['rowid', 'email', 'name', 'user_role']
+        head: ['rowid', 'email', 'name', 'user_role', 'enabled']
       })
       users.forEach((user) => {
-        table.push([user.id, user.email, user.name, user.user_role])
+        table.push([user.id, user.email, user.name, user.user_role, user.enabled])
       })
       console.log(table.toString())
       console.log(`${users.length} Users`)
@@ -145,7 +147,7 @@ if (program.create) {
       return getPassword('Password (confirmation)')
         .then((passwordConfirmation) => {
           if (password === passwordConfirmation) {
-            return createUser(program.email, program.name, 'reporter', password)
+            return createUser(program.email, program.name, 'reporter', !program.enabled, password)
           }
         })
     })
@@ -154,7 +156,7 @@ if (program.create) {
     .then((token) => {
       if (program.update) {
         let role = program.admin ? 'admin' : program.deployer ? 'deployer' : 'reporter'
-        updateUser(program.id, program.name, role, token)
+        updateUser(program.id, program.name, role, !program.enabled, token)
       } else if (program.list) {
         listUsers(token)
       } else if (program.delete) {

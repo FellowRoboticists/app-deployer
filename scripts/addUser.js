@@ -18,6 +18,7 @@ program
   .option('-A, --admin', 'The user is an administrator')
   .option('-D, --deployer', 'The user is a deployer')
   .option('-R, --reporter', 'The user is a reporter')
+  .option('-d, --disabled', 'Disable the user (default is enabled')
   .parse(process.argv)
 
 if (!program.email) {
@@ -51,11 +52,13 @@ const cryptPassword = (password) => {
 
 const userRole = () => program.admin ? 'admin' : program.deployer ? 'deployer' : 'reporter'
 
+const enabled = !program.disabled
+
 sqlSVC.selectUserByEmail(program.email)
   .then((user) => {
     if (user) throw new Error(`User with email (${program.email}) already exists.`)
     return cryptPassword(program.password)
-      .then((encryptedPassword) => sqlSVC.insertUser({ email: program.email, name: program.name, user_role: userRole() }, encryptedPassword))
+      .then((encryptedPassword) => sqlSVC.insertUser({ email: program.email, name: program.name, user_role: userRole(), enabled: enabled }, encryptedPassword))
   })
   .then(() => {
     console.log(`Successfully added user ${program.email}`)
