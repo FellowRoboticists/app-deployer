@@ -585,6 +585,75 @@ module.exports = (function () {
     })
   }
 
+  const selectReleaseInfoSQL = `
+    SELECT
+      apps.rowid AS application_id,
+      apps.name AS application_name,
+      rols.rowid AS role_id,
+      rols.role,
+      rols.active_server,
+      rols.time_window,
+      rols.appdir,
+      rols.ruby_name,
+      rels.rowid AS release_id,
+      rels.version,
+      rels.tarball,
+      rels.seedfile,
+      rels.timestamp
+    FROM
+      applications apps INNER JOIN roles rols ON rols.application_id = apps.rowid
+      INNER JOIN releases rels ON rels.application_id = apps.rowid
+    WHERE
+      apps.name = ?
+      AND rels.version = ?
+      AND rols.role = ?`
+
+  const selectReleaseInfo = (appName, version, role) => {
+    return new Promise((resolve, reject) => {
+      dbConn.get(selectReleaseInfoSQL, appName, version, role, (err, row) => {
+        if (err) return reject(err)
+        resolve(row)
+      })
+    })
+  }
+
+  const selectDeploymentInfoSQL = `
+    SELECT
+      apps.rowid AS application_id,
+      apps.name AS application_name,
+      rols.rowid AS role_id,
+      rols.role,
+      rols.active_server,
+      rols.time_window,
+      rols.appdir,
+      rols.ruby_name,
+      rels.version,
+      rels.tarball,
+      rels.seedfile,
+      rels.timestamp,
+      deps.rowid AS deployment_id,
+      deps.override_token,
+      deps.step,
+      deps.status,
+      deps.message
+    FROM
+      applications apps INNER JOIN roles rols ON rols.application_id = apps.rowid
+      INNER JOIN releases rels ON rels.application_id = apps.rowid
+      INNER JOIN deployments deps ON deps.role_id = rols.rowid AND deps.release_id = rels.rowid
+    WHERE
+      apps.name = ?
+      AND rels.version = ?
+      AND rols.role = ?`
+
+  const selectDeploymentInfo = (appName, version, role) => {
+    return new Promise((resolve, reject) => {
+      dbConn.get(selectDeploymentInfoSQL, appName, version, role, (err, row) => {
+        if (err) return reject(err)
+        resolve(row)
+      })
+    })
+  }
+
   const selectApplicationReleaseByNameVersionSQL = `
     SELECT
       apps.rowid AS application_id,
@@ -1185,6 +1254,7 @@ module.exports = (function () {
     selectApplicationRoles: selectApplicationRoles,
     selectDeployments: selectDeployments,
     selectDeploymentByRoleRelease: selectDeploymentByRoleRelease,
+    selectDeploymentInfo: selectDeploymentInfo,
     selectLatestApplication: selectLatestApplication,
     selectLatestApplicationRelease: selectLatestApplicationRelease,
     selectLatestApplicationRole: selectLatestApplicationRole,
@@ -1192,6 +1262,7 @@ module.exports = (function () {
     selectLatestUser: selectLatestUser,
     selectLatestWorkflow: selectLatestWorkflow,
     selectNextRoleWorkflow: selectNextRoleWorkflow,
+    selectReleaseInfo: selectReleaseInfo,
     selectRoleWorkflows: selectRoleWorkflows,
     selectUserByEmail: selectUserByEmail,
     selectUserById: selectUserById,

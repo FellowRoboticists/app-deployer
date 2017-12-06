@@ -6,7 +6,6 @@ module.exports = (function () {
   const sqlSVC = require('../sql/sql-service')
   const TimeWindow = require('time-window')
   const jwt = require('jsonwebtoken')
-  // const deploySVC = require('./deploy-service')
 
   const getDeployments = (queryParameters) => {
     return sqlSVC.selectDeployments(queryParameters.release_id, queryParameters.role_id)
@@ -57,14 +56,14 @@ module.exports = (function () {
     return Promise.resolve()
   }
 
-  const _runDeployWorkflow = (deployment, timeWindow, userId) => {
+  const _runDeployWorkflow = (deployment, releaseInfo, userId) => {
     deployment.step += 1
     return sqlSVC.selectWorkflowByRoleSequence(deployment.role_id, deployment.step)
       .then((wfStep) => {
         if (!wfStep) throw new Error(`No step ${deployment.step} for role ${deployment.role_id}`)
 
         // First, make sure we're within the time window
-        return _withinMaintenanceWindow(timeWindow, deployment, wfStep.enforce_tw)
+        return _withinMaintenanceWindow(releaseInfo.time_window, deployment, wfStep.enforce_tw)
           .then((inWindow) => {
             if (!inWindow) {
               winston.log('info', '### Outside maintenance window')
@@ -81,7 +80,7 @@ module.exports = (function () {
                     if (wfStep.pause_after || wfStep.final) {
                       return deployment
                     } else {
-                      return _runDeployWorkflow(deployment, timeWindow, userId)
+                      return _runDeployWorkflow(deployment, releaseInfo, userId)
                     }
                   })
               })
@@ -96,26 +95,19 @@ module.exports = (function () {
   }
 
   const doDeployment = (application, appVersion, role, userId) => {
-    let timeWindow = null
-    return sqlSVC.selectApplicationReleaseByNameVersion(application, appVersion)
-      .then((appRelease) => {
-        if (!appRelease) throw new Error(`There is no release version ${appVersion} for ${application}`)
-        return sqlSVC.selectApplicationRoleByAppRole(application, role)
-          .then((appRole) => {
-            if (!appRole) throw new Error(`There is no '${role}' for ${application}`)
-            timeWindow = appRole.time_window
-            return sqlSVC.selectDeploymentByRoleRelease(appRelease.release_id, appRole.role_id)
-              .then((deployment) => {
-                if (!deployment) {
-                  return sqlSVC.insertDeployment(appRelease.release_id, appRole.role_id, userId)
-                    .then(() => sqlSVC.selectLatestDeployment())
-                } else {
-                  return deployment
-                }
-              })
+    return sqlSVC.selectReleaseInfo(application, appVersion, role)
+      .then((releaseInfo) => {
+        return sqlSVC.selectDeploymentByRoleRelease(releaseInfo.release_id, releaseInfo.role_id)
+          .then((deployment) => {
+            if (!deployment) {
+              return sqlSVC.insertDeployment(releaseInfo.release_id, releaseInfo.role_id, userId)
+                .then(() => sqlSVC.selectLatestDeployment())
+            } else {
+              return deployment
+            }
           })
+          .then((deployment) => _runDeployWorkflow(deployment, releaseInfo, userId))
       })
-      .then((deployment) => _runDeployWorkflow(deployment, timeWindow, userId))
   }
 
   const _createOverrideToken = (timeWindow) => {
@@ -129,18 +121,13 @@ module.exports = (function () {
   }
 
   const overrideTimeWindow = (application, appVersion, role, timeWindow, userId) => {
-    return sqlSVC.selectApplicationReleaseByNameVersion(application, appVersion)
-      .then((appRelease) => {
-        if (!appRelease) throw new Error(`There is no release version ${appVersion} for ${application}`)
-        return sqlSVC.selectApplicationRoleByAppRole(application, role)
-          .then((appRole) => {
-            if (!appRole) throw new Error(`There is no '${role}' for ${application}`)
-            return sqlSVC.selectDeploymentByRoleRelease(appRelease.release_id, appRole.role_id)
-              .then((deployment) => {
-                return _createOverrideToken(timeWindow)
-                  .then((token) => sqlSVC.updateDeploymentOverrideToken(deployment.id, token))
-                  .then(() => deployment)
-              })
+    return sqlSVC.selectReleaseInfo(application, appVersion, role)
+      .then((releaseInfo) => {
+        return sqlSVC.selectDeploymentByRoleRelease(releaseInfo.release_id, releaseInfo.role_id)
+          .then((deployment) => {
+            return _createOverrideToken(timeWindow)
+              .then((token) => sqlSVC.updateDeploymentOverrideToken(deployment.id, token))
+              .then(() => deployment)
           })
       })
   }
