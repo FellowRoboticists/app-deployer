@@ -107,10 +107,10 @@ const listReleases = (appId, token) => {
     .then((releases) => {
       console.log('Releases')
       let table = new Table({
-        head: ['rowid', 'application_id', 'version', 'tarball', 'seedfile', 'user_id', 'created_at']
+        head: ['rowid', 'application_id', 'version', 'tarball', 'seedfile', 'user_id', 'timestamp', 'created_at']
       })
       releases.forEach((release) => {
-        table.push([release.id, release.application_id, release.version, release.tarball, release.seedfile ? release.seedfile : '', release.user_id, release.created_at])
+        table.push([release.id, release.application_id, release.version, release.tarball, release.seedfile ? release.seedfile : '', release.user_id, release.timestamp, release.created_at])
       })
       console.log(table.toString())
       console.log(`${releases.length} Releases`)

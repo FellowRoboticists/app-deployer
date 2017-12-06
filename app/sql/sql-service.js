@@ -67,6 +67,7 @@ module.exports = (function () {
       tarball TEXT NOT NULL, 
       seedfile TEXT, 
       user_id INTEGER NOT NULL,
+      timestamp TEXT NOT NULL,
       created_at INTEGER NOT NULL, 
       PRIMARY KEY (rowid),
       CONSTRAINT uniq_version UNIQUE (application_id, version), 
@@ -89,6 +90,8 @@ module.exports = (function () {
       role TEXT NOT NULL, 
       active_server TEXT NOT NULL, 
       time_window TEXT, 
+      appdir TEXT NOT NULL,
+      ruby_name TEXT NOT NULL,
       PRIMARY KEY (rowid),
       CONSTRAINT uniq_role UNIQUE (application_id, role), 
       FOREIGN KEY (application_id) REFERENCES applications(rowid) ON DELETE CASCADE)`
@@ -301,14 +304,16 @@ module.exports = (function () {
       application_id, 
       role, 
       active_server,
-      time_window
+      time_window,
+      appdir,
+      ruby_name
     ) VALUES (
-      ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?
     )`
 
   const insertApplicationRole = (appId, roleParams) => {
     return new Promise((resolve, reject) => {
-      dbConn.run(insertApplicationRoleSQL, appId, roleParams.role, roleParams.active_server, roleParams.time_window, (err) => {
+      dbConn.run(insertApplicationRoleSQL, appId, roleParams.role, roleParams.active_server, roleParams.time_window, roleParams.appdir, roleParams.ruby_name, (err) => {
         if (err) return reject(err)
         resolve()
       })
@@ -359,9 +364,10 @@ module.exports = (function () {
       tarball, 
       seedfile,
       user_id,
+      timestamp,
       created_at
     ) VALUES (
-      ?, ?, ?, ?, ?, DATETIME('now')
+      ?, ?, ?, ?, ?, STRFTIME('%Y%m%d%H%M%S', 'now'), DATETIME('now')
     )`
 
   const insertRelease = (appId, version, tarball, seedfile, userId) => {
@@ -450,7 +456,10 @@ module.exports = (function () {
       rols.role,
       rols.active_server,
       rols.time_window,
+      rols.appdir,
+      rols.ruby_name,
       rels.version,
+      rels.created_at,
       apps.name
     FROM
       deployments deps INNER JOIN releases rels ON deps.release_id = rels.rowid
@@ -536,6 +545,7 @@ module.exports = (function () {
       tarball,
       seedfile,
       user_id,
+      timestamp,
       created_at
     FROM
       releases
@@ -559,6 +569,7 @@ module.exports = (function () {
       tarball,
       seedfile,
       user_id,
+      timestamp,
       created_at
     FROM
       releases
@@ -577,7 +588,8 @@ module.exports = (function () {
   const selectApplicationReleaseByNameVersionSQL = `
     SELECT
       apps.rowid AS application_id,
-      rels.rowid AS release_id
+      rels.rowid AS release_id,
+      rels.created_at
     FROM
       applications apps INNER JOIN releases rels ON rels.application_id = apps.rowid
     WHERE
@@ -597,7 +609,9 @@ module.exports = (function () {
     SELECT
       apps.rowid AS application_id,
       rols.rowid AS role_id,
-      rols.time_window
+      rols.time_window,
+      rols.appdir,
+      rols.ruby_name
     FROM
       applications apps INNER JOIN roles rols ON rols.application_id = apps.rowid
     WHERE
@@ -619,7 +633,9 @@ module.exports = (function () {
       application_id, 
       role, 
       active_server,
-      time_window
+      time_window,
+      appdir,
+      ruby_name
     FROM 
       roles 
     WHERE 
@@ -640,7 +656,9 @@ module.exports = (function () {
       application_id, 
       role, 
       active_server,
-      time_window
+      time_window,
+      appdir,
+      ruby_name
     FROM 
       roles 
     WHERE 
@@ -663,6 +681,7 @@ module.exports = (function () {
       tarball, 
       seedfile,
       user_id,
+      timestamp,
       created_at 
     FROM 
       releases 
@@ -687,7 +706,9 @@ module.exports = (function () {
       application_id, 
       role, 
       active_server,
-      time_window
+      time_window,
+      appdir,
+      ruby_name
     FROM 
       roles 
     WHERE 
@@ -1013,13 +1034,15 @@ module.exports = (function () {
       application_id = ?, 
       role = ?, 
       active_server = ?,
-      time_window = ?
+      time_window = ?,
+      appdir = ?,
+      ruby_name = ?
     WHERE 
       rowid = ?`
 
   const updateApplicationRole = (appId, roleId, roleParams) => {
     return new Promise((resolve, reject) => {
-      dbConn.run(updateApplicationRoleSQL, appId, roleParams.role, roleParams.active_server, roleParams.time_window, roleId, (err) => {
+      dbConn.run(updateApplicationRoleSQL, appId, roleParams.role, roleParams.active_server, roleParams.time_window, roleParams.appdir, roleParams.ruby_name, roleId, (err) => {
         if (err) return reject(err)
         resolve()
       })

@@ -15,27 +15,27 @@ INSERT INTO applications (
 
 -- Roles
 INSERT INTO roles (
-  application_id, role, active_server, time_window
+  application_id, role, active_server, time_window, appdir, ruby_name
 ) VALUES (
-  1, 'uat', 'uat.abaqis.com', '* * * * *'
+  1, 'uat', 'uat.abaqis.com', '* * * * *', 'abaqis', 'ruby_abaqis'
 ), (
-  1, 'test', 'test.abaqis.com', '* * * * *'
+  1, 'test', 'test.abaqis.com', '* * * * *', 'abaqis', 'ruby_abaqis'
 ), (
-  1, 'demo', 'ping.abaqis.com', '* 17-21 * * 4'
+  1, 'demo', 'ping.abaqis.com', '* 17-21 * * 4', 'demo', 'ruby_abaqis'
 ), (
-  1, 'training', 'quincy.abaqis.com', '* 20-21 * * 4'
+  1, 'training', 'quincy.abaqis.com', '* 20-21 * * 4', 'training', 'ruby_abaqis'
 ), (
-  1, 'production', 'ares.abaqis.com', '* 20-21 * * 4'
+  1, 'production', 'ares.abaqis.com', '* 20-21 * * 4', 'abaqis', 'ruby_abaqis'
 ), (
-  2, 'uat', 'uat.abaqis.com', '* * * * *'
+  2, 'uat', 'uat.abaqis.com', '* * * * *', 'abaqis-ese', 'ruby_empsat'
 ), (
-  2, 'demo', 'ping.abaqis.com', '* 17-21 * * 4'
+  2, 'demo', 'ping.abaqis.com', '* 17-21 * * 4', 'demo-ese', 'ruby_empsat'
 ), (
-  2, 'production', 'ares.abaqis.com', '* 20-21 * * 4'
+  2, 'production', 'ares.abaqis.com', '* 20-21 * * 4', 'abaqis-ese', 'ruby_empsat'
 ), (
-  3, 'uat', 'mohontariotw.abaqis.com', '* * * * *'
+  3, 'uat', 'mohontariotw.abaqis.com', '* * * * *', 'abaqis', 'ruby_rqi'
 ), (
-  3, 'production', 'mohontariopw.abaqis.com', '* 17-21 * * 5'
+  3, 'production', 'mohontariopw.abaqis.com', '* 17-21 * * 5', 'abaqis', 'ruby_rqi'
 );
 
 -- Workflows
