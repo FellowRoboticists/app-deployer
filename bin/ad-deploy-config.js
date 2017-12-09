@@ -395,7 +395,7 @@ const rqiRoles = [
 ]
 
 const logMessage = (message) => {
-  fs.appendFile('ad-deploy-confiog.log', message, (err) => {
+  fs.appendFile('ad-deploy-config.log', message, (err) => {
     if (err) {
       console.error(err.stack || err)
       process.exit(1)

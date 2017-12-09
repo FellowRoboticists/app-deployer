@@ -1,4 +1,4 @@
-# Vimm
+# Vim
 *.swp
 
 # screen
@@ -34,3 +34,6 @@ node_modules
 
 # Debug log from npm
 npm-debug.log
+
+# App residue
+deploy-config.json
