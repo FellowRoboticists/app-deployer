@@ -30,6 +30,182 @@ const indexFields = [
   'postMigrationScript5'
 ]
 
+class InvokeForm {
+  constructor (appScreen) {
+    this._appScreen = appScreen
+    this._form = this._window(appScreen.getScreen())
+    this._duration = new DurationRadios(this, 'script', 1, 2)
+    this._submitButton = new FormButton(this, 'Submit', 1, 5, () => { this._submitHandler() })
+    this._cancelButton = new FormButton(this, 'Cancel', 20, 5, () => { this._cancelHandler() })
+    this._form.on('submit', (data) => this._submitForm(data))
+  }
+
+  _window (screen) {
+    let form = Blessed.form({
+      parent: screen,
+      left: 'center',
+      top: 'center',
+      width: 60,
+      height: 19,
+      keys: true,
+      hidden: true,
+      border: {
+        type: 'line'
+      }
+    })
+
+    this._checkBox = Blessed.checkbox({
+      parent: form,
+      label: '] Invoke'
+    })
+
+    return form
+  }
+
+  getForm () {
+    return this._form
+  }
+
+  setEditData (editData) {
+    this._editData = editData
+    if (editData.value.invoke) {
+      this._checkBox.check()
+    } else {
+      this._checkBox.uncheck()
+    }
+    this._duration.setDuration(editData.value.duration)
+  }
+
+  focus () {
+    this._checkBox.focus()
+  }
+
+  _submitHandler () {
+    this._form.submit()
+  }
+
+  _submitForm (formData) {
+    this._editData.value.invoke = this._checkBox.checked
+    this._editData.value.duration = this._duration.getDuration()
+    this._appScreen.submitForm(this._editData)
+    this.toggle()
+    this._appScreen.focusOnRoleAttrList()
+    this._appScreen.render()
+  }
+
+  _cancelHandler () {
+    this.toggle()
+    this._appScreen.focusOnRoleAttrList()
+    this._appScreen.render()
+  }
+
+  toggle () {
+    this._form.toggle()
+  }
+
+  hide () {
+    this._form.hide()
+  }
+
+  show () {
+    this._form.show()
+  }
+
+  getAppScreen () {
+    return this._appScreen
+  }
+}
+
+class ScriptForm {
+  constructor (appScreen) {
+    this._appScreen = appScreen
+    this._form = this._window(appScreen.getScreen())
+    this._duration = new DurationRadios(this, 'script', 1, 2)
+    this._submitButton = new FormButton(this, 'Submit', 1, 5, () => { this._submitHandler() })
+    this._cancelButton = new FormButton(this, 'Cancel', 20, 5, () => { this._cancelHandler() })
+    this._form.on('submit', (data) => this._submitForm(data))
+  }
+
+  _window (screen) {
+    let form = Blessed.form({
+      parent: screen,
+      left: 'center',
+      top: 'center',
+      width: 60,
+      height: 19,
+      keys: true,
+      hidden: true,
+      border: {
+        type: 'line'
+      }
+    })
+
+    Blessed.text({
+      parent: form,
+      content: 'Script Path: '
+    })
+
+    this._textBox = Blessed.textbox({
+      parent: form,
+      inputOnFocus: true,
+      left: 13 + 1
+    })
+
+    return form
+  }
+
+  getForm () {
+    return this._form
+  }
+
+  setEditData (editData) {
+    logMessage(`Edit Data: ${JSON.stringify(editData)}\n`)
+    logMessage(`Edit Data: ${JSON.stringify(editData)}\n`)
+    this._editData = editData
+    this._textBox.setValue(editData.value.path)
+    this._duration.setDuration(editData.value.duration)
+  }
+
+  focus () {
+    this._textBox.focus()
+  }
+
+  _submitHandler () {
+    this._form.submit()
+  }
+
+  _submitForm (formData) {
+    this._editData.value.path = this._textBox.getValue()
+    this._editData.value.duration = this._duration.getDuration()
+    this._appScreen.submitForm(this._editData)
+    this.toggle()
+    this._appScreen.focusOnRoleAttrList()
+    this._appScreen.render()
+  }
+
+  _cancelHandler () {
+    this.toggle()
+    this._appScreen.focusOnRoleAttrList()
+    this._appScreen.render()
+  }
+
+  toggle () {
+    this._form.toggle()
+  }
+
+  hide () {
+    this._form.hide()
+  }
+
+  show () {
+    this._form.show()
+  }
+
+  getAppScreen () {
+    return this._appScreen
+  }
+}
+
 class RPMNameForm {
   constructor (appScreen) {
     this._appScreen = appScreen
@@ -77,13 +253,11 @@ class RPMNameForm {
   }
 
   _submitHandler () {
-    logMessage('Submitted form\n')
     this._form.submit()
   }
 
   _submitForm (formData) {
     this._editData.value = this._textBox.getValue()
-    logMessage(`The editdata: ${JSON.stringify(this._editData)}\n`)
     this._appScreen.submitForm(this._editData)
     this.toggle()
     this._appScreen.focusOnRoleAttrList()
@@ -91,7 +265,6 @@ class RPMNameForm {
   }
 
   _cancelHandler () {
-    logMessage('Cancelled form\n')
     this.toggle()
     this._appScreen.focusOnRoleAttrList()
     this._appScreen.render()
@@ -165,14 +338,12 @@ class RoleAttrTable {
       selectedField: selectedField,
       value: roleData[selectedField]
     }
-    logMessage(`Selected roleData: ${selectedIndex}\n`)
     if (selectedIndex >= 1 && selectedIndex <= 2) {
-      logMessage(`Displaying the RPM name form\n`)
       this._appScreen.showRPMNameForm(editData)
     } else if ((selectedIndex >= 3 && selectedIndex <= 7) || (selectedIndex >= 10 && selectedIndex <= 14)) {
-      this._appScreen.showMigrationScriptForm()
+      this._appScreen.showScriptForm(editData)
     } else if ((selectedIndex >= 8 && selectedIndex <= 9)) {
-      this._appScreen.showSeedMigrationForm()
+      this._appScreen.showInvokeForm(editData)
     }
   }
 
@@ -198,7 +369,7 @@ class RoleAttrTable {
     data.push([ 'PreMigration', roleData.preMigrationScript3.path, roleData.preMigrationScript3.duration ])
     data.push([ 'PreMigration', roleData.preMigrationScript4.path, roleData.preMigrationScript4.duration ])
     data.push([ 'PreMigration', roleData.preMigrationScript5.path, roleData.preMigrationScript5.duration ])
-    data.push([ 'Seed Data', roleData.seedDataLoad + '', '' ])
+    data.push([ 'Seed Data', roleData.seedDataLoad.invoke + '', roleData.seedDataLoad.duration ])
     data.push([ 'Schema Migration', roleData.schemaMigration.invoke + '', roleData.schemaMigration.duration ])
     data.push([ 'PostMigration', roleData.postMigrationScript1.path, roleData.postMigrationScript1.duration ])
     data.push([ 'PostMigration', roleData.postMigrationScript2.path, roleData.postMigrationScript2.duration ])
@@ -293,7 +464,7 @@ class DurationRadios {
       }
     })
 
-    Blessed.radiobutton({
+    this._short = Blessed.radiobutton({
       parent: radioSet,
       name: 'short',
       label: ') Short',
@@ -301,7 +472,7 @@ class DurationRadios {
       left: 0
     })
 
-    Blessed.radiobutton({
+    this._medium = Blessed.radiobutton({
       parent: radioSet,
       name: 'medium',
       label: ') Medium',
@@ -309,7 +480,7 @@ class DurationRadios {
       left: 10
     })
 
-    Blessed.radiobutton({
+    this._long = Blessed.radiobutton({
       parent: radioSet,
       name: 'long',
       label: ') Long',
@@ -318,6 +489,29 @@ class DurationRadios {
     })
 
     return radioSet
+  }
+
+  setDuration (duration) {
+    if (duration === 'short') {
+      this._short.check()
+    } else if (duration === 'medium') {
+      this._medium.check()
+    } else if (duration === 'long') {
+      this._long.check()
+    }
+  }
+
+  getDuration () {
+    let duration = null
+    if (this._short.checked) {
+      duration = 'short'
+    } else if (this._medium.checked) {
+      duration = 'medium'
+    } else if (this._long.checked) {
+      duration = 'long'
+    }
+
+    return duration
   }
 }
 
@@ -435,14 +629,12 @@ class RoleForm {
   }
 
   _cancelHandler () {
-    logMessage('cancelling form')
     this._appScreen.updateForm()
     this._appScreen.focusToRoleList()
     this._appScreen.render()
   }
 
   _submit (data) {
-    logMessage('submitting form')
     this._appScreen.updateConfigDataForSelectedRole(data)
     this._appScreen.focusToRoleList()
   }
@@ -486,7 +678,7 @@ const ADRoleData = {
   preMigrationScript3: { path: null, duration: 'short' },
   preMigrationScript4: { path: null, duration: 'short' },
   preMigrationScript5: { path: null, duration: 'short' },
-  seedDataLoad: false,
+  seedDataLoad: { invoke: false, duration: 'short' },
   schemaMigration: { invoke: false, duration: 'short' },
   postMigrationScript1: { path: null, duration: 'short' },
   postMigrationScript2: { path: null, duration: 'short' },
@@ -557,6 +749,8 @@ class ADDeployConfigScreen {
     // this._roleForm = new RoleForm(this)
     this._text = this._appLabel(this._screen, applicationName)
     this._rpmNameForm = new RPMNameForm(this)
+    this._scriptForm = new ScriptForm(this)
+    this._invokeForm = new InvokeForm(this)
     this._screen.key(['escape', 'C-c'], () => this._exitScreen())
   }
 
@@ -592,6 +786,20 @@ class ADDeployConfigScreen {
     this.render()
   }
 
+  showScriptForm (editData) {
+    this._scriptForm.setEditData(editData)
+    this._scriptForm.toggle()
+    this._scriptForm.focus()
+    this.render()
+  }
+
+  showInvokeForm (editData) {
+    this._invokeForm.setEditData(editData)
+    this._invokeForm.toggle()
+    this._invokeForm.focus()
+    this.render()
+  }
+
   submitForm (editData) {
     let selectedRole = this.getSelectedRole()
     this._adConfigData.setConfigData(selectedRole, editData.selectedField, editData.value)
@@ -600,24 +808,6 @@ class ADDeployConfigScreen {
     this._adConfigData.saveConfigData()
       .then(() => logMessage('Saved configuration data.\n'))
       .catch((err) => logMessage(err.stack || err + '\n'))
-    // let selectedIndex = this._roleAttrList.selected
-    // let selectedRole = this._appScreen.getSelectedRole()
-    // let selectedField = indexFields[selectedIndex]
-    //let editData = {
-      //index: selectedIndex,
-      //selectedRole: selectedRole,
-      //selectedField: selectedField,
-      //value: roleData[selectedField]
-    //}
-    //logMessage(`Selected roleData: ${selectedIndex}\n`)
-    //if (selectedIndex >= 1 && selectedIndex <= 2) {
-      //logMessage(`Displaying the RPM name form\n`)
-      //this._appScreen.showRPMNameForm(editData)
-    //} else if ((selectedIndex >= 3 && selectedIndex <= 7) || (selectedIndex >= 10 && selectedIndex <= 14)) {
-      //this._appScreen.showMigrationScriptForm()
-    //} else if ((selectedIndex >= 8 && selectedIndex <= 9)) {
-      //this._appScreen.showSeedMigrationForm()
-    //}
   }
 
   render () {
@@ -646,7 +836,6 @@ class ADDeployConfigScreen {
   }
 
   append (node) {
-    logMessage(`Appending the node to screen\n`)
     this._screen.append(node)
   }
 
@@ -674,8 +863,6 @@ class ADDeployConfigScreen {
 
   updateConfigDataForSelectedRole (data) {
     let selectedRole = this.getSelectedRole()
-    logMessage(`Selected role: ${selectedRole}\n`)
-    logMessage(`Data in form: ${JSON.stringify(data)}`)
     Object.keys(data).forEach((field) => {
       this._adConfigData.setConfigData(selectedRole, field, data[field])
     })
@@ -727,7 +914,6 @@ let adConfigData = new ADConfigData('deploy-config.json', roles)
 
 adConfigData.loadConfigData()
   .then((configData) => {
-    logMessage(JSON.stringify(configData))
     let screen = new ADDeployConfigScreen(roles, adConfigData, applicationName)
     // screen.updateForm()
     // screen.hideAllForms()
