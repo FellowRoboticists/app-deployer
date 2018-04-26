@@ -10,7 +10,7 @@
     "body-parser": "~1.18.2",
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.9",
-    "express": "~4.15.5",
+    "express": "^4.16.3",
     "express-winston": "^2.4.0",
     "fs-extra": "^4.0.2",
     "jade": "~1.11.0",
@@ -28,7 +28,7 @@
   "devDependencies": {
     "blessed": "^0.1.81",
     "cli-table": "^0.3.1",
-    "request": "^2.83.0",
+    "request": "^2.85.0",
     "request-promise-native": "^1.0.5"
   }
 }
