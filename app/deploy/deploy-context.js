@@ -7,129 +7,120 @@ module.exports = (function () {
   const TimeWindow = require('time-window')
   const jwt = require('jsonwebtoken')
 
-  const getDeployments = (queryParameters) => {
+  const getDeployments = async (queryParameters) => {
     return sqlSVC.selectDeployments(queryParameters.release_id, queryParameters.role_id)
   }
 
-  const createDeployment = (deployParams, userId) => {
-    return sqlSVC.insertDeployment(deployParams.release_id, deployParams.role_id, userId)
-      .then(() => sqlSVC.selectLatestDeployment())
+  const createDeployment = async (deployParams, userId) => {
+    await sqlSVC.insertDeployment(deployParams.release_id, deployParams.role_id, userId)
+
+    return sqlSVC.selectLatestDeployment()
   }
 
-  const _identifyTimeWindow = (timeWindow, overrideToken) => {
-    return new Promise((resolve, reject) => {
-      if (overrideToken) {
-        let payload = null
-        try {
-          payload = jwt.verify(overrideToken, appDeployConfig.environment.jwtSecret)
-        } catch (ex) {
-          return reject(ex)
-        }
-        if (payload.time_window) {
-          resolve(payload.time_window)
-        } else {
-          reject(new Error('No time_window in override token'))
-        }
+  const _identifyTimeWindow = async (timeWindow, overrideToken) => {
+    if (overrideToken) {
+      let payload = jwt.verify(overrideToken, appDeployConfig.environment.jwtSecret)
+
+      if (payload.time_window) {
+        return payload.time_window
       } else {
-        resolve(timeWindow)
+        throw new Error('No time_window in override token')
       }
-    })
+    } else {
+      return timeWindow
+    }
   }
 
-  const _withinMaintenanceWindow = (timeWindow, deployment, enforceTw) => {
+  const _withinMaintenanceWindow = async (timeWindow, deployment, enforceTw) => {
     winston.log('info', `### timeWindow = ${timeWindow}`)
     winston.log('info', `### overrideToken = ${deployment.override_token}`)
     winston.log('info', `### enforctTw = ${enforceTw}`)
-    if (!enforceTw) return Promise.resolve(true)
 
-    return _identifyTimeWindow(timeWindow, deployment.override_token)
-      .then((timeWindow) => {
-        winston.log('info', `### Time Window Chosen: ${timeWindow}`)
-        if (!timeWindow) return true
-        let tw = new TimeWindow(timeWindow)
-        return tw.inTimeWindow()
-      })
+    if (!enforceTw) return true
+
+    let idTimeWindow = _identifyTimeWindow(timeWindow, deployment.override_token)
+
+    winston.log('info', `### Time Window Chosen: ${timeWindow}`)
+    if (!idTimeWindow) return true
+
+    let tw = new TimeWindow(idTimeWindow)
+
+    return tw.inTimeWindow()
   }
 
-  const _executePlaybook = (playbook) => {
+  const _executePlaybook = async (playbook) => {
     winston.log('info', `### Running playbook: ${playbook}`)
-    return Promise.resolve()
   }
 
-  const _runDeployWorkflow = (deployment, releaseInfo, userId) => {
+  const _runDeployWorkflow = async (deployment, releaseInfo, userId) => {
     deployment.step += 1
-    return sqlSVC.selectWorkflowByRoleSequence(deployment.role_id, deployment.step)
-      .then((wfStep) => {
-        if (!wfStep) throw new Error(`No step ${deployment.step} for role ${deployment.role_id}`)
 
-        // First, make sure we're within the time window
-        return _withinMaintenanceWindow(releaseInfo.time_window, deployment, wfStep.enforce_tw)
-          .then((inWindow) => {
-            if (!inWindow) {
-              winston.log('info', '### Outside maintenance window')
-              deployment.status = 2
-              deployment.message = 'Attempted deployment outside maintenance window'
-              return sqlSVC.updateDeploymentStatus(deployment.id, deployment.status, deployment.message)
-                .then(() => deployment)
-            }
+    let wfStep = await sqlSVC.selectWorkflowByRoleSequence(deployment.role_id, deployment.step)
 
-            return _executePlaybook(wfStep.playbook)
-              .then(() => {
-                return sqlSVC.updateDeploymentIncrementStep(deployment.id, userId)
-                  .then(() => {
-                    if (wfStep.pause_after || wfStep.final) {
-                      return deployment
-                    } else {
-                      return _runDeployWorkflow(deployment, releaseInfo, userId)
-                    }
-                  })
-              })
-              .catch((err) => {
-                deployment.status = 2
-                deployment.message = `Error executing playbook (${wfStep.playbook}): ${err.message}`
-                return sqlSVC.updateDeploymentStatus(deployment.id, deployment.status, deployment.message)
-                  .then(() => deployment)
-              })
-          })
-      })
-  }
+    if (!wfStep) throw new Error(`No step ${deployment.step} for role ${deployment.role_id}`)
 
-  const doDeployment = (application, appVersion, role, userId) => {
-    return sqlSVC.selectReleaseInfo(application, appVersion, role)
-      .then((releaseInfo) => {
-        return sqlSVC.selectDeploymentByRoleRelease(releaseInfo.release_id, releaseInfo.role_id)
-          .then((deployment) => {
-            if (!deployment) {
-              return sqlSVC.insertDeployment(releaseInfo.release_id, releaseInfo.role_id, userId)
-                .then(() => sqlSVC.selectLatestDeployment())
-            } else {
-              return deployment
-            }
-          })
-          .then((deployment) => _runDeployWorkflow(deployment, releaseInfo, userId))
-      })
-  }
+    // First, make sure we're within the time window
+    let inWindow = await _withinMaintenanceWindow(releaseInfo.time_window, deployment, wfStep.enforce_tw)
 
-  const _createOverrideToken = (timeWindow) => {
-    return new Promise((resolve, reject) => {
-      let payload = {
-        time_window: timeWindow
+    if (!inWindow) {
+      winston.log('info', '### Outside maintenance window')
+      deployment.status = 2
+      deployment.message = 'Attempted deployment outside maintenance window'
+
+      await sqlSVC.updateDeploymentStatus(deployment.id, deployment.status, deployment.message)
+      return deployment
+    }
+
+    try {
+      await _executePlaybook(wfStep.playbook)
+
+      await sqlSVC.updateDeploymentIncrementStep(deployment.id, userId)
+
+      if (wfStep.pause_after || wfStep.final) {
+        return deployment
+      } else {
+        return _runDeployWorkflow(deployment, releaseInfo, userId)
       }
-      let token = jwt.sign(payload, appDeployConfig.environment.jwtSecret, { expiresIn: 60 * 60 * 24 })
-      resolve(token)
-    })
+    } catch (err) {
+      deployment.status = 2
+      deployment.message = `Error executing playbook (${wfStep.playbook}): ${err.message}`
+
+      await sqlSVC.updateDeploymentStatus(deployment.id, deployment.status, deployment.message)
+
+      return deployment
+    }
   }
 
-  const overrideTimeWindow = (application, appVersion, role, timeWindow, userId) => {
-    return sqlSVC.selectReleaseInfo(application, appVersion, role)
-      .then((releaseInfo) => {
-        return sqlSVC.selectDeploymentByRoleRelease(releaseInfo.release_id, releaseInfo.role_id)
-          .then((deployment) => {
-            return _createOverrideToken(timeWindow)
-              .then((token) => sqlSVC.updateDeploymentOverrideToken(deployment.id, token))
-              .then(() => deployment)
-          })
-      })
+  const doDeployment = async (application, appVersion, role, userId) => {
+    let releaseInfo = await sqlSVC.selectReleaseInfo(application, appVersion, role)
+
+    let deployment = await sqlSVC.selectDeploymentByRoleRelease(releaseInfo.release_id, releaseInfo.role_id)
+
+    if (!deployment) {
+      await sqlSVC.insertDeployment(releaseInfo.release_id, releaseInfo.role_id, userId)
+      deployment = await sqlSVC.selectLatestDeployment()
+    }
+
+    return _runDeployWorkflow(deployment, releaseInfo, userId)
+  }
+
+  const _createOverrideToken = async (timeWindow) => {
+    let payload = {
+      time_window: timeWindow
+    }
+
+    return jwt.sign(payload, appDeployConfig.environment.jwtSecret, { expiresIn: 60 * 60 * 24 })
+  }
+
+  const overrideTimeWindow = async (application, appVersion, role, timeWindow, userId) => {
+    let releaseInfo = await sqlSVC.selectReleaseInfo(application, appVersion, role)
+
+    let deployment = await sqlSVC.selectDeploymentByRoleRelease(releaseInfo.release_id, releaseInfo.role_id)
+
+    let token = await _createOverrideToken(timeWindow)
+    await sqlSVC.updateDeploymentOverrideToken(deployment.id, token)
+
+    return deployment
   }
 
   var mod = {

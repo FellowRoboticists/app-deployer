@@ -5,75 +5,82 @@ module.exports = (function () {
   const releaseSVC = require('../release/release-service')
   const sqlSVC = require('../sql/sql-service')
 
-  const createApplication = (applicationParams) => {
-    return sqlSVC.insertApplication(applicationParams.name)
-      .then(() => sqlSVC.selectLatestApplication())
+  const createApplication = async (applicationParams) => {
+    await sqlSVC.insertApplication(applicationParams.name)
+
+    return sqlSVC.selectLatestApplication()
   }
 
-  const deleteApplication = (application) => {
-    return releaseSVC.deleteApplicationTarballs(application.id)
-      .then(() => sqlSVC.deleteApplications(application.id))
-      .then(() => application)
+  const deleteApplication = async (application) => {
+    await releaseSVC.deleteApplicationTarballs(application.id)
+    await sqlSVC.deleteApplications(application.id)
+
+    return application
   }
 
-  const getApplications = () => {
+  const getApplications = async () => {
     return sqlSVC.selectAllApplications()
   }
 
-  const updateApplication = (application, params) => {
-    return sqlSVC.updateApplication(application.id, params)
-      .then(() => sqlSVC.selectApplicationById(application.id))
+  const updateApplication = async (application, params) => {
+    await sqlSVC.updateApplication(application.id, params)
+
+    return sqlSVC.selectApplicationById(application.id)
   }
 
-  const getApplicationReleases = (application) => {
+  const getApplicationReleases = async (application) => {
     return sqlSVC.selectApplicationReleases(application.id)
   }
 
-  const getApplicationRoles = (application) => {
+  const getApplicationRoles = async (application) => {
     return sqlSVC.selectApplicationRoles(application.id)
   }
 
-  const createApplicationRelease = (application, uploadedTarball, uploadedSeedfile, releaseParams, userId) => {
+  const createApplicationRelease = async (application, uploadedTarball, uploadedSeedfile, releaseParams, userId) => {
     let seedFileName = uploadedSeedfile ? uploadedSeedfile.originalname : null
-    return sqlSVC.insertRelease(releaseParams.application_id, releaseParams.version, uploadedTarball.originalname, seedFileName, userId)
-      .then(() => sqlSVC.selectLatestApplicationRelease(releaseParams.application_id))
-      .then((release) => {
-        return deploySVC.saveTarball(uploadedTarball, release.id)
-          .then((fullPath) => {
-            if (uploadedSeedfile) {
-              return deploySVC.saveSeedfile(uploadedSeedfile, release.id)
-                .then((fullPath) => release)
-            } else {
-              return release
-            }
-          })
-      })
+
+    await sqlSVC.insertRelease(releaseParams.application_id, releaseParams.version, uploadedTarball.originalname, seedFileName, userId)
+
+    let release = await sqlSVC.selectLatestApplicationRelease(releaseParams.application_id)
+
+    await deploySVC.saveTarball(uploadedTarball, release.id)
+
+    if (uploadedSeedfile) {
+      await deploySVC.saveSeedfile(uploadedSeedfile, release.id)
+    }
+
+    return release
   }
 
-  const createApplicationRole = (application, roleParams) => {
-    return sqlSVC.insertApplicationRole(application.id, roleParams)
-      .then(() => sqlSVC.selectLatestApplicationRole(application.id))
+  const createApplicationRole = async (application, roleParams) => {
+    await sqlSVC.insertApplicationRole(application.id, roleParams)
+
+    return sqlSVC.selectLatestApplicationRole(application.id)
   }
 
-  const updateApplicationRelease = (application, release, releaseParams, userId) => {
-    return sqlSVC.updateApplicationRelease(application.id, release.id, releaseParams, userId)
-      .then(() => sqlSVC.selectApplicationReleaseById(release.id))
+  const updateApplicationRelease = async (application, release, releaseParams, userId) => {
+    await sqlSVC.updateApplicationRelease(application.id, release.id, releaseParams, userId)
+
+    return sqlSVC.selectApplicationReleaseById(release.id)
   }
 
-  const updateApplicationRole = (application, role, roleParams) => {
-    return sqlSVC.updateApplicationRole(application.id, role.id, roleParams)
-      .then(() => sqlSVC.selectApplicationRoleById(role.id))
+  const updateApplicationRole = async (application, role, roleParams) => {
+    await sqlSVC.updateApplicationRole(application.id, role.id, roleParams)
+
+    return sqlSVC.selectApplicationRoleById(role.id)
   }
 
-  const deleteApplicationRelease = (release) => {
-    return sqlSVC.deleteApplicationRelease(release.id)
-      .then(() => deploySVC.deleteTarball(release.id))
-      .then(() => release)
+  const deleteApplicationRelease = async (release) => {
+    await sqlSVC.deleteApplicationRelease(release.id)
+    await deploySVC.deleteTarball(release.id)
+
+    return release
   }
 
-  const deleteApplicationRole = (role) => {
-    return sqlSVC.deleteApplicationRole(role.id)
-      .then(() => role)
+  const deleteApplicationRole = async (role) => {
+    await sqlSVC.deleteApplicationRole(role.id)
+
+    return role
   }
 
   var mod = {

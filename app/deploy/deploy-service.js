@@ -5,66 +5,58 @@
 module.exports = (function () {
   const path = require('path')
   const fs = require('fs-extra')
-  const async = require('async')
   const sqlSVC = require('../sql/sql-service')
 
-  const _registerDeployments = (roles, releaseId, deployAt) => {
-    return new Promise((resolve, reject) => {
-      const eachRole = (role, cb) => {
-        sqlSVC.insertDeployment(releaseId, role, deployAt)
-          .then(() => cb())
-          .catch(cb)
-      }
-
-      const loopDone = (err) => {
-        if (err) return reject(err)
-        resolve()
-      }
-
-      async.eachSeries(roles, eachRole, loopDone)
-    })
+  const _registerDeployments = async (roles, releaseId, deployAt) => {
+    for (let role of roles) {
+      await sqlSVC.insertDeployment(releaseId, role, deployAt)
+    }
   }
 
-  const registerRelease = (tarballName, deployParams) => {
-    return sqlSVC.insertRelease(deployParams.application_id, deployParams.version, tarballName)
-      .then(() => sqlSVC.selectLatestApplicationRelease(deployParams.application_id))
-      .then((release) => {
-        if (deployParams.role instanceof Array) {
-          return _registerDeployments(deployParams.role, release.id, deployParams.deploy_at)
-            .then(() => release)
-        } else {
-          return sqlSVC.insertDeployment(release.id, deployParams.role, deployParams.deploy_at)
-            .then(() => release)
-        }
-      })
+  const registerRelease = async (tarballName, deployParams) => {
+    await sqlSVC.insertRelease(deployParams.application_id, deployParams.version, tarballName)
+    let release = await sqlSVC.selectLatestApplicationRelease(deployParams.application_id)
+
+    if (deployParams.role instanceof Array) {
+      await _registerDeployments(deployParams.role, release.id, deployParams.deploy_at)
+    } else {
+      await sqlSVC.insertDeployment(release.id, deployParams.role, deployParams.deploy_at)
+    }
+
+    return release
   }
 
-  const deleteTarball = (releaseId) => {
+  const deleteTarball = async (releaseId) => {
     let tarballPath = path.join(appDeployConfig.environment.tarballPath, '' + releaseId)
+
     return fs.remove(tarballPath)
   }
 
-  const saveTarball = (uploadedTarball, releaseId) => {
+  const saveTarball = async (uploadedTarball, releaseId) => {
     let tarballPath = path.join(appDeployConfig.environment.tarballPath, '' + releaseId, uploadedTarball.originalname)
-    return fs.ensureDir(path.join(appDeployConfig.environment.tarballPath, '' + releaseId))
-      .then(() => fs.copy(uploadedTarball.path, tarballPath))
-      .then(() => fs.remove(uploadedTarball.path))
-      .then(() => tarballPath)
+
+    await fs.ensureDir(path.join(appDeployConfig.environment.tarballPath, '' + releaseId))
+    await fs.copy(uploadedTarball.path, tarballPath)
+    await fs.remove(uploadedTarball.path)
+
+    return tarballPath
   }
 
-  const saveSeedfile = (uploadedSeedfile, releaseId) => {
+  const saveSeedfile = async (uploadedSeedfile, releaseId) => {
     let seedfilePath = path.join(appDeployConfig.environment.tarballPath, '' + releaseId, uploadedSeedfile.originalname)
-    return fs.ensureDir(path.join(appDeployConfig.environment.tarballPath, '' + releaseId))
-      .then(() => fs.copy(uploadedSeedfile.path, seedfilePath))
-      .then(() => fs.remove(uploadedSeedfile.path))
-      .then(() => seedfilePath)
+
+    await fs.ensureDir(path.join(appDeployConfig.environment.tarballPath, '' + releaseId))
+    await fs.copy(uploadedSeedfile.path, seedfilePath)
+    await fs.remove(uploadedSeedfile.path)
+
+    return seedfilePath
   }
 
-  const deleteReleaseDeployments = (releaseId) => {
+  const deleteReleaseDeployments = async (releaseId) => {
     return sqlSVC.deleteReleaseDeployments(releaseId)
   }
 
-  const deleteRoleDeployments = (roleId) => {
+  const deleteRoleDeployments = async (roleId) => {
     return sqlSVC.deleteRoleDeployments(roleId)
   }
 

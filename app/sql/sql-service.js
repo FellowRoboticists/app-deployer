@@ -2,6 +2,11 @@
 
 module.exports = (function () {
   const dbConn = require('../utility/db').conn()
+  const {promisify} = require('util')
+
+  const dbConnRun = promisify(dbConn.run).bind(dbConn)
+  const dbConnAll = promisify(dbConn.all).bind(dbConn)
+  const dbConnGet = promisify(dbConn.get).bind(dbConn)
 
   const changeUserPasswordSQL = `
     UPDATE users SET
@@ -9,13 +14,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const changeUserPassword = (userId, encryptedPassword) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(changeUserPasswordSQL, encryptedPassword, userId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const changeUserPassword = async (userId, encryptedPassword) => {
+    return dbConnRun(changeUserPasswordSQL, encryptedPassword)
   }
 
   const createApplicationsTableSQL = `
@@ -24,13 +24,8 @@ module.exports = (function () {
       name TEXT NOT NULL UNIQUE,
       PRIMARY KEY (rowid))`
 
-  const createApplicationsTable = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(createApplicationsTableSQL, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const createApplicationsTable = async () => {
+    return dbConnRun(createApplicationsTableSQL)
   }
 
   const createDeploymentsTableSQL = `
@@ -50,13 +45,8 @@ module.exports = (function () {
       FOREIGN KEY(role_id) REFERENCES roles(rowid) ON DELETE CASCADE,
       FOREIGN KEY(user_id) REFERENCES users(rowid) ON DELETE CASCADE)`
 
-  const createDeploymentsTable = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(createDeploymentsTableSQL, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const createDeploymentsTable = async () => {
+    return dbConnRun(createDeploymentsTableSQL)
   }
 
   const createReleasesTableSQL = `
@@ -74,13 +64,8 @@ module.exports = (function () {
       FOREIGN KEY(application_id) REFERENCES applications(rowid) ON DELETE CASCADE,
       FOREIGN KEY(user_id) REFERENCES users(rowid) ON DELETE CASCADE)`
 
-  const createReleasesTable = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(createReleasesTableSQL, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const createReleasesTable = async () => {
+    return dbConnRun(createReleasesTableSQL)
   }
 
   const createRolesTableSQL = `
@@ -96,13 +81,8 @@ module.exports = (function () {
       CONSTRAINT uniq_role UNIQUE (application_id, role), 
       FOREIGN KEY (application_id) REFERENCES applications(rowid) ON DELETE CASCADE)`
 
-  const createRolesTable = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(createRolesTableSQL, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const createRolesTable = async () => {
+    return dbConnRun(createRolesTableSQL)
   }
 
   const createUsersTableSQL = `
@@ -115,13 +95,8 @@ module.exports = (function () {
       enabled INTEGER NOT NULL CHECK (enabled IN (0,1)),
       PRIMARY KEY (rowid))`
 
-  const createUsersTable = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(createUsersTableSQL, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const createUsersTable = async () => {
+    return dbConnRun(createUsersTableSQL)
   }
 
   const createWorkflowsTableSQL = `
@@ -136,13 +111,8 @@ module.exports = (function () {
       PRIMARY KEY (rowid),
       FOREIGN KEY(role_id) REFERENCES roles(rowid) ON DELETE CASCADE)`
 
-  const createWorkflowsTable = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(createWorkflowsTableSQL, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const createWorkflowsTable = async () => {
+    return dbConnRun(createWorkflowsTableSQL)
   }
 
   const deleteApplicationsSQL = `
@@ -150,13 +120,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const deleteApplications = (applicationId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(deleteApplicationsSQL, applicationId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const deleteApplications = async (applicationId) => {
+    return dbConnRun(deleteApplicationsSQL, applicationId)
   }
 
   const deleteApplicationDeploymentsSQL = `
@@ -164,13 +129,8 @@ module.exports = (function () {
     WHERE
       role_id IN (SELECT rowid FROM roles WHERE application_id = ?)`
 
-  const deleteApplicationDeployments = (applicationId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(deleteApplicationDeploymentsSQL, applicationId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const deleteApplicationDeployments = async (applicationId) => {
+    return dbConnRun(deleteApplicationDeploymentsSQL, applicationId)
   }
 
   const deleteApplicationReleaseSQL = `
@@ -178,13 +138,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const deleteApplicationRelease = (releaseId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(deleteApplicationReleaseSQL, releaseId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const deleteApplicationRelease = async (releaseId) => {
+    return dbConnRun(deleteApplicationReleaseSQL, releaseId)
   }
 
   const deleteApplicationReleasesSQL = `
@@ -192,13 +147,8 @@ module.exports = (function () {
     WHERE
       application_id = ?`
 
-  const deleteApplicationReleases = (applicationId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(deleteApplicationReleasesSQL, applicationId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const deleteApplicationReleases = async (applicationId) => {
+    return dbConnRun(deleteApplicationReleasesSQL, applicationId)
   }
 
   const deleteApplicationRoleSQL = `
@@ -206,13 +156,8 @@ module.exports = (function () {
     WHERE 
       rowid = ?`
 
-  const deleteApplicationRole = (roleId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(deleteApplicationRoleSQL, roleId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const deleteApplicationRole = async (roleId) => {
+    return dbConnRun(deleteApplicationRoleSQL, roleId)
   }
 
   const deleteApplicationRolesSQL = `
@@ -220,13 +165,8 @@ module.exports = (function () {
     WHERE
       application_id = ?`
 
-  const deleteApplicationRoles = (applicationId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(deleteApplicationRolesSQL, applicationId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const deleteApplicationRoles = async (applicationId) => {
+    return dbConnRun(deleteApplicationRolesSQL, applicationId)
   }
 
   const deleteReleaseDeploymentsSQL = `
@@ -234,13 +174,8 @@ module.exports = (function () {
     WHERE 
       release_id = ?`
 
-  const deleteReleaseDeployments = (releaseId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(deleteReleaseDeploymentsSQL, releaseId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const deleteReleaseDeployments = async (releaseId) => {
+    return dbConnRun(deleteReleaseDeploymentsSQL, releaseId)
   }
 
   const deleteRoleDeploymentsSQL = `
@@ -248,13 +183,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const deleteRoleDeployments = (roleId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(deleteRoleDeploymentsSQL, roleId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const deleteRoleDeployments = async (roleId) => {
+    return dbConnRun(deleteRoleDeploymentsSQL, roleId)
   }
 
   const deleteRoleWorkflowsSQL = `
@@ -262,13 +192,8 @@ module.exports = (function () {
     WHERE
       role_id = ?`
 
-  const deleteRoleWorkflows = (roleId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(deleteRoleWorkflowsSQL, roleId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const deleteRoleWorkflows = async (roleId) => {
+    return dbConnRun(deleteRoleWorkflowsSQL, roleId)
   }
 
   const deleteUserSQL = `
@@ -276,13 +201,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const deleteUser = (userId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(deleteUserSQL, userId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const deleteUser = async (userId) => {
+    return dbConnRun(deleteUserSQL, userId)
   }
 
   const deleteWorkflowSQL = `
@@ -290,13 +210,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const deleteWorkflow = (id) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(deleteWorkflowSQL, id, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const deleteWorkflow = async (id) => {
+    return dbConnRun(deleteWorkflowSQL, id)
   }
 
   const insertApplicationRoleSQL = `
@@ -311,13 +226,8 @@ module.exports = (function () {
       ?, ?, ?, ?, ?, ?
     )`
 
-  const insertApplicationRole = (appId, roleParams) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(insertApplicationRoleSQL, appId, roleParams.role, roleParams.active_server, roleParams.time_window, roleParams.appdir, roleParams.ruby_name, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const insertApplicationRole = async (appId, roleParams) => {
+    return dbConnRun(insertApplicationRoleSQL, appId, roleParams.role, roleParams.active_server, roleParams.time_window, roleParams.appdir, roleParams.ruby_name)
   }
 
   const insertApplicationSQL = `
@@ -327,13 +237,8 @@ module.exports = (function () {
       ?
     )`
 
-  const insertApplication = (name) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(insertApplicationSQL, name, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const insertApplication = async (name) => {
+    return dbConnRun(insertApplicationSQL, name)
   }
 
   const insertDeploymentSQL = `
@@ -348,13 +253,8 @@ module.exports = (function () {
       ?,?,0,0,?,DATETIME('now')
     )`
 
-  const insertDeployment = (releaseId, roleId, userId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(insertDeploymentSQL, releaseId, roleId, userId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const insertDeployment = async (releaseId, roleId, userId) => {
+    return dbConnRun(insertDeploymentSQL, releaseId, roleId, userId)
   }
 
   const insertReleaseSQL = `
@@ -370,13 +270,8 @@ module.exports = (function () {
       ?, ?, ?, ?, ?, STRFTIME('%Y%m%d%H%M%S', 'now'), DATETIME('now')
     )`
 
-  const insertRelease = (appId, version, tarball, seedfile, userId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(insertReleaseSQL, appId, version, tarball, seedfile, userId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const insertRelease = async (appId, version, tarball, seedfile, userId) => {
+    return dbConnRun(insertReleaseSQL, appId, version, tarball, seedfile, userId)
   }
 
   const insertUserSQL = `
@@ -390,13 +285,8 @@ module.exports = (function () {
       ?, ?, ?, ?, ?
     )`
 
-  const insertUser = (userParams, encryptedPassword) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(insertUserSQL, userParams.email, userParams.name, userParams.user_role, userParams.enabled, encryptedPassword, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const insertUser = async (userParams, encryptedPassword) => {
+    return dbConnRun(insertUserSQL, userParams.email, userParams.name, userParams.user_role, userParams.enabled, encryptedPassword)
   }
 
   const insertWorkflowSQL = `
@@ -411,23 +301,18 @@ module.exports = (function () {
       ?,?,?,?,?,?
     )`
 
-  const insertWorkflow = (roleId, playbook, sequence, enforceTW, pause, finalStep) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(insertWorkflowSQL, roleId, playbook, sequence, enforceTW, pause, finalStep, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const insertWorkflow = async (roleId, playbook, sequence, enforceTW, pause, finalStep) => {
+    return dbConnRun(insertWorkflowSQL, roleId, playbook, sequence, enforceTW, pause, finalStep)
   }
 
-  const prepDB = () => {
-    return createUsersTable()
-      .then(() => createApplicationsTable())
-      .then(() => createRolesTable())
-      .then(() => createReleasesTable())
-      .then(() => createDeploymentsTable())
-      .then(() => createWorkflowsTable())
-      .then(() => foreignKeysOn())
+  const prepDB = async () => {
+    await createUsersTable()
+    await createApplicationsTable()
+    await createRolesTable()
+    await createReleasesTable()
+    await createDeploymentsTable()
+    await createWorkflowsTable()
+    return foreignKeysOn()
   }
 
   const selectAllApplicationsSQL = `
@@ -437,13 +322,8 @@ module.exports = (function () {
     FROM 
       applications`
 
-  const selectAllApplications = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectAllApplicationsSQL, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows)
-      })
-    })
+  const selectAllApplications = async () => {
+    return dbConnAll(selectAllApplicationsSQL)
   }
 
   const selectDeploymentsSQL = `
@@ -469,13 +349,8 @@ module.exports = (function () {
       deps.release_id = ?
       OR deps.role_id = ?`
 
-  const selectDeployments = (releaseId, roleId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectDeploymentsSQL, releaseId, roleId, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows)
-      })
-    })
+  const selectDeployments = async (releaseId, roleId) => {
+    return dbConnAll(selectDeploymentsSQL, releaseId, roleId)
   }
 
   const selectDeploymentByRoleReleaseSQL = `
@@ -493,13 +368,8 @@ module.exports = (function () {
       release_id = ?
       AND role_id = ?`
 
-  const selectDeploymentByRoleRelease = (releaseId, roleId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.get(selectDeploymentByRoleReleaseSQL, releaseId, roleId, (err, row) => {
-        if (err) return reject(err)
-        resolve(row)
-      })
-    })
+  const selectDeploymentByRoleRelease = async (releaseId, roleId) => {
+    return dbConnGet(selectDeploymentByRoleReleaseSQL, releaseId, roleId)
   }
 
   const selectApplicationByIdSQL = `
@@ -511,13 +381,8 @@ module.exports = (function () {
     WHERE 
       rowid = ?`
 
-  const selectApplicationById = (id) => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectApplicationByIdSQL, id, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows[0])
-      })
-    })
+  const selectApplicationById = async (id) => {
+    return dbConnGet(selectApplicationByIdSQL, id)
   }
 
   const selectApplicationReleaseIdsSQL = `
@@ -528,13 +393,8 @@ module.exports = (function () {
     WHERE
       application_id = ?`
 
-  const selectApplicationReleaseIds = (applicationId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectApplicationReleaseIdsSQL, applicationId, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows.map((rel) => rel.id))
-      })
-    })
+  const selectApplicationReleaseIds = async (applicationId) => {
+    return dbConnAll(selectApplicationReleaseIdsSQL, applicationId)
   }
 
   const selectApplicationReleaseByIdSQL = `
@@ -552,13 +412,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const selectApplicationReleaseById = (id) => {
-    return new Promise((resolve, reject) => {
-      dbConn.get(selectApplicationReleaseByIdSQL, id, (err, row) => {
-        if (err) return reject(err)
-        resolve(row)
-      })
-    })
+  const selectApplicationReleaseById = async (id) => {
+    return dbConnGet(selectApplicationReleaseByIdSQL, id)
   }
 
   const selectApplicationReleasesSQL = `
@@ -576,13 +431,8 @@ module.exports = (function () {
     WHERE
       application_id = ?`
 
-  const selectApplicationReleases = (appId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectApplicationReleasesSQL, appId, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows)
-      })
-    })
+  const selectApplicationReleases = async (appId) => {
+    return dbConnAll(selectApplicationReleasesSQL, appId)
   }
 
   const selectReleaseInfoSQL = `
@@ -608,13 +458,8 @@ module.exports = (function () {
       AND rels.version = ?
       AND rols.role = ?`
 
-  const selectReleaseInfo = (appName, version, role) => {
-    return new Promise((resolve, reject) => {
-      dbConn.get(selectReleaseInfoSQL, appName, version, role, (err, row) => {
-        if (err) return reject(err)
-        resolve(row)
-      })
-    })
+  const selectReleaseInfo = async (appName, version, role) => {
+    return dbConnGet(selectReleaseInfoSQL, appName, version, role)
   }
 
   const selectDeploymentInfoSQL = `
@@ -645,13 +490,8 @@ module.exports = (function () {
       AND rels.version = ?
       AND rols.role = ?`
 
-  const selectDeploymentInfo = (appName, version, role) => {
-    return new Promise((resolve, reject) => {
-      dbConn.get(selectDeploymentInfoSQL, appName, version, role, (err, row) => {
-        if (err) return reject(err)
-        resolve(row)
-      })
-    })
+  const selectDeploymentInfo = async (appName, version, role) => {
+    return dbConnGet(selectDeploymentInfoSQL, appName, version, role)
   }
 
   const selectApplicationReleaseByNameVersionSQL = `
@@ -665,13 +505,8 @@ module.exports = (function () {
       apps.name = ?
       AND rels.version = ?`
 
-  const selectApplicationReleaseByNameVersion = (application, appVersion) => {
-    return new Promise((resolve, reject) => {
-      dbConn.get(selectApplicationReleaseByNameVersionSQL, application, appVersion, (err, row) => {
-        if (err) return reject(err)
-        resolve(row)
-      })
-    })
+  const selectApplicationReleaseByNameVersion = async (application, appVersion) => {
+    return dbConnGet(selectApplicationReleaseByNameVersionSQL, application, appVersion)
   }
 
   const selectApplicationRoleByAppRoleSQL = `
@@ -687,13 +522,8 @@ module.exports = (function () {
       apps.name = ?
       AND rols.role = ?`
 
-  const selectApplicationRoleByAppRole = (application, role) => {
-    return new Promise((resolve, reject) => {
-      dbConn.get(selectApplicationRoleByAppRoleSQL, application, role, (err, row) => {
-        if (err) return reject(err)
-        resolve(row)
-      })
-    })
+  const selectApplicationRoleByAppRole = async (application, role) => {
+    return dbConnGet(selectApplicationRoleByAppRoleSQL, application, role)
   }
 
   const selectApplicationRoleByIdSQL = `
@@ -710,13 +540,8 @@ module.exports = (function () {
     WHERE 
       rowid = ?`
 
-  const selectApplicationRoleById = (id) => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectApplicationRoleByIdSQL, id, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows[0])
-      })
-    })
+  const selectApplicationRoleById = async (id) => {
+    return dbConnAll(selectApplicationRoleByIdSQL, id)
   }
 
   const selectApplicationRolesSQL = `
@@ -733,13 +558,8 @@ module.exports = (function () {
     WHERE 
       application_id = ?`
 
-  const selectApplicationRoles = (appId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectApplicationRolesSQL, appId, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows)
-      })
-    })
+  const selectApplicationRoles = async (appId) => {
+    return dbConnAll(selectApplicationRolesSQL, appId)
   }
 
   const selectLatestApplicationReleaseSQL = `
@@ -760,13 +580,8 @@ module.exports = (function () {
       rowid DESC 
     LIMIT 1`
 
-  const selectLatestApplicationRelease = (appId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectLatestApplicationReleaseSQL, appId, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows[0])
-      })
-    })
+  const selectLatestApplicationRelease = async (appId) => {
+    return dbConnAll(selectLatestApplicationReleaseSQL, appId)
   }
 
   const selectLatestApplicationRoleSQL = `
@@ -786,13 +601,8 @@ module.exports = (function () {
       rowid DESC 
     LIMIT 1`
 
-  const selectLatestApplicationRole = (appId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectLatestApplicationRoleSQL, appId, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows[0])
-      })
-    })
+  const selectLatestApplicationRole = async (appId) => {
+    return dbConnAll(selectLatestApplicationRoleSQL, appId)
   }
 
   const selectLatestApplicationSQL = `
@@ -805,13 +615,8 @@ module.exports = (function () {
       rowid DESC 
     LIMIT 1`
 
-  const selectLatestApplication = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectLatestApplicationSQL, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows[0])
-      })
-    })
+  const selectLatestApplication = async () => {
+    return dbConnGet(selectLatestApplicationSQL)
   }
 
   const selectLatestDeploymentSQL = `
@@ -829,13 +634,8 @@ module.exports = (function () {
       rowid DESC
     LIMIT 1`
 
-  const selectLatestDeployment = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectLatestDeploymentSQL, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows[0])
-      })
-    })
+  const selectLatestDeployment = async () => {
+    return dbConnAll(selectLatestDeploymentSQL)
   }
 
   const selectLatestUserSQL = `
@@ -851,13 +651,8 @@ module.exports = (function () {
       rowid DESC
     LIMIT 1`
 
-  const selectLatestUser = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectLatestUserSQL, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows[0])
-      })
-    })
+  const selectLatestUser = async () => {
+    return dbConnAll(selectLatestUserSQL)
   }
 
   const selectLatestWorkflowSQL = `
@@ -875,13 +670,8 @@ module.exports = (function () {
       rowid DESC
     LIMIT 1`
 
-  const selectLatestWorkflow = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectLatestWorkflowSQL, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows[0])
-      })
-    })
+  const selectLatestWorkflow = async () => {
+    return dbConnAll(selectLatestWorkflowSQL)
   }
 
   const selectUserByEmailSQL = `
@@ -897,13 +687,8 @@ module.exports = (function () {
     WHERE
       email = ?`
 
-  const selectUserByEmail = (email) => {
-    return new Promise((resolve, reject) => {
-      dbConn.get(selectUserByEmailSQL, email, (err, row) => {
-        if (err) return reject(err)
-        resolve(row)
-      })
-    })
+  const selectUserByEmail = async (email) => {
+    return dbConnGet(selectUserByEmailSQL, email)
   }
 
   const selectUserByIdSQL = `
@@ -919,13 +704,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const selectUserById = (id) => {
-    return new Promise((resolve, reject) => {
-      dbConn.get(selectUserByIdSQL, id, (err, row) => {
-        if (err) return reject(err)
-        resolve(row)
-      })
-    })
+  const selectUserById = async (id) => {
+    return dbConnGet(selectUserByIdSQL, id)
   }
 
   const selectUsersSQL = `
@@ -938,13 +718,8 @@ module.exports = (function () {
     FROM
       users`
 
-  const selectUsers = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectUsersSQL, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows)
-      })
-    })
+  const selectUsers = async () => {
+    return dbConnAll(selectUsersSQL)
   }
 
   const selectWorkflowByIdSQL = `
@@ -961,13 +736,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const selectWorkflowById = (id) => {
-    return new Promise((resolve, reject) => {
-      dbConn.get(selectWorkflowByIdSQL, id, (err, row) => {
-        if (err) return reject(err)
-        resolve(row)
-      })
-    })
+  const selectWorkflowById = async (id) => {
+    return dbConnGet(selectWorkflowByIdSQL, id)
   }
 
   const selectWorkflowByRoleSequenceSQL = `
@@ -985,13 +755,8 @@ module.exports = (function () {
       role_id = ?
       AND sequence = ?`
 
-  const selectWorkflowByRoleSequence = (roleId, sequence) => {
-    return new Promise((resolve, reject) => {
-      dbConn.get(selectWorkflowByRoleSequenceSQL, roleId, sequence, (err, row) => {
-        if (err) return reject(err)
-        resolve(row)
-      })
-    })
+  const selectWorkflowByRoleSequence = async (roleId, sequence) => {
+    return dbConnGet(selectWorkflowByRoleSequenceSQL, roleId, sequence)
   }
 
   const selectWorkflowsSQL = `
@@ -1006,13 +771,8 @@ module.exports = (function () {
     FROM
       workflows`
 
-  const selectWorkflows = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectWorkflowsSQL, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows)
-      })
-    })
+  const selectWorkflows = async () => {
+    return dbConnAll(selectWorkflowsSQL)
   }
 
   const selectRoleWorkflowsSQL = `
@@ -1031,13 +791,8 @@ module.exports = (function () {
     ORDER BY
       sequence ASC`
 
-  const selectRoleWorkflows = (roleId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectRoleWorkflowsSQL, roleId, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows)
-      })
-    })
+  const selectRoleWorkflows = async (roleId) => {
+    return dbConnAll(selectRoleWorkflowsSQL, roleId)
   }
 
   const selectNextRoleWorkflowSQL = `
@@ -1057,13 +812,8 @@ module.exports = (function () {
     ORDER BY
       sequence ASC`
 
-  const selectNextRoleWorkflow = (roleId, sequence) => {
-    return new Promise((resolve, reject) => {
-      dbConn.all(selectNextRoleWorkflowSQL, roleId, sequence, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows[0])
-      })
-    })
+  const selectNextRoleWorkflow = async (roleId, sequence) => {
+    return dbConnAll(selectNextRoleWorkflowSQL, roleId, sequence)
   }
 
   const updateApplicationSQL = `
@@ -1072,13 +822,8 @@ module.exports = (function () {
     WHERE 
       rowid = ?`
 
-  const updateApplication = (id, appParams) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(updateApplicationSQL, appParams.name, id, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const updateApplication = async (id, appParams) => {
+    return dbConnRun(updateApplicationSQL, appParams.name, id)
   }
 
   const updateApplicationReleaseSQL = `
@@ -1089,13 +834,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const updateApplicationRelease = (appId, releaseId, releaseParams, userId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(updateApplicationReleaseSQL, appId, releaseParams.version, userId, releaseId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const updateApplicationRelease = async (appId, releaseId, releaseParams, userId) => {
+    return dbConnRun(updateApplicationReleaseSQL, appId, releaseParams.version, userId, releaseId)
   }
 
   const updateApplicationRoleSQL = `
@@ -1109,13 +849,8 @@ module.exports = (function () {
     WHERE 
       rowid = ?`
 
-  const updateApplicationRole = (appId, roleId, roleParams) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(updateApplicationRoleSQL, appId, roleParams.role, roleParams.active_server, roleParams.time_window, roleParams.appdir, roleParams.ruby_name, roleId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const updateApplicationRole = async (appId, roleId, roleParams) => {
+    return dbConnRun(updateApplicationRoleSQL, appId, roleParams.role, roleParams.active_server, roleParams.time_window, roleParams.appdir, roleParams.ruby_name, roleId)
   }
 
   const updateDeploymentIncrementStepSQL = `
@@ -1127,13 +862,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const updateDeploymentIncrementStep = (id, userId) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(updateDeploymentIncrementStepSQL, userId, id, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const updateDeploymentIncrementStep = async (id, userId) => {
+    return dbConnRun(updateDeploymentIncrementStepSQL, userId, id)
   }
 
   const updateDeploymentStatusSQL = `
@@ -1143,13 +873,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const updateDeploymentStatus = (id, status, message) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(updateDeploymentStatusSQL, status, message, id, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const updateDeploymentStatus = async (id, status, message) => {
+    return dbConnRun(updateDeploymentStatusSQL, status, message, id)
   }
 
   const updateDeploymentOverrideTokenSQL = `
@@ -1158,13 +883,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const updateDeploymentOverrideToken = (id, token) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(updateDeploymentOverrideTokenSQL, token, id, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const updateDeploymentOverrideToken = async (id, token) => {
+    return dbConnRun(updateDeploymentOverrideTokenSQL, token, id)
   }
 
   const updateUserSQL = `
@@ -1175,13 +895,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const updateUser = (userId, userParams, enabled) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(updateUserSQL, userParams.name, userParams.user_role, enabled, userId, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const updateUser = async (userId, userParams, enabled) => {
+    return dbConnRun(updateUserSQL, userParams.name, userParams.user_role, enabled, userId)
   }
 
   const updateWorkflowSQL = `
@@ -1195,25 +910,15 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const updateWorkflow = (id, roleId, playbook, sequence, enforceTW, pause, finalStep) => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(updateWorkflowSQL, roleId, playbook, sequence, enforceTW, pause, finalStep, id, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const updateWorkflow = async (id, roleId, playbook, sequence, enforceTW, pause, finalStep) => {
+    return dbConnRun(updateWorkflowSQL, roleId, playbook, sequence, enforceTW, pause, finalStep, id)
   }
 
   const foreignKeysOnSQL = `
     PRAGMA foreign_keys = ON`
 
-  const foreignKeysOn = () => {
-    return new Promise((resolve, reject) => {
-      dbConn.run(foreignKeysOnSQL, (err) => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+  const foreignKeysOn = async () => {
+    return dbConnRun(foreignKeysOnSQL)
   }
 
   var mod = {

@@ -3,17 +3,18 @@
 module.exports = (function () {
   const sqlSVC = require('../sql/sql-service')
 
-  const createWorkflow = (workflowParams) => {
-    return sqlSVC.insertWorkflow(workflowParams.role_id, workflowParams.playbook, workflowParams.sequence, workflowParams.enforce_tw, workflowParams.pause_after, workflowParams.final)
-      .then(() => sqlSVC.selectLatestWorkflow())
+  const createWorkflow = async (workflowParams) => {
+    await sqlSVC.insertWorkflow(workflowParams.role_id, workflowParams.playbook, workflowParams.sequence, workflowParams.enforce_tw, workflowParams.pause_after, workflowParams.final)
+
+    return sqlSVC.selectLatestWorkflow()
   }
 
-  const deleteWorkflow = (workflow) => {
-    return sqlSVC.deleteWorkflow(workflow.id)
-      .then(() => workflow)
+  const deleteWorkflow = async (workflow) => {
+    await sqlSVC.deleteWorkflow(workflow.id)
+    return workflow
   }
 
-  const getWorkflows = (queryParams) => {
+  const getWorkflows = async (queryParams) => {
     if (queryParams.roleId) {
       return sqlSVC.selectRoleWorkflows(queryParams.roleId)
     } else {
@@ -21,10 +22,11 @@ module.exports = (function () {
     }
   }
 
-  const updateWorkflow = (workflow, workflowParams) => {
+  const updateWorkflow = async (workflow, workflowParams) => {
     console.log(`### ${JSON.stringify(workflowParams)}`)
-    return sqlSVC.updateWorkflow(workflow.id, workflowParams.role_id, workflowParams.playbook, workflowParams.sequence, workflowParams.enforce_tw, workflowParams.pause_after, workflowParams.final)
-      .then(() => sqlSVC.selectWorkflowById(workflow.id))
+    await sqlSVC.updateWorkflow(workflow.id, workflowParams.role_id, workflowParams.playbook, workflowParams.sequence, workflowParams.enforce_tw, workflowParams.pause_after, workflowParams.final)
+
+    return sqlSVC.selectWorkflowById(workflow.id)
   }
 
   var mod = {
