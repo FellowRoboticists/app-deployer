@@ -541,7 +541,7 @@ module.exports = (function () {
       rowid = ?`
 
   const selectApplicationRoleById = async (id) => {
-    return dbConnAll(selectApplicationRoleByIdSQL, id)
+    return dbConnGet(selectApplicationRoleByIdSQL, id)
   }
 
   const selectApplicationRolesSQL = `
@@ -602,7 +602,7 @@ module.exports = (function () {
     LIMIT 1`
 
   const selectLatestApplicationRole = async (appId) => {
-    return dbConnAll(selectLatestApplicationRoleSQL, appId)
+    return dbConnGet(selectLatestApplicationRoleSQL, appId)
   }
 
   const selectLatestApplicationSQL = `
