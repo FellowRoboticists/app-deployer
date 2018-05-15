@@ -94,15 +94,19 @@ const listUsers = (token) => {
   }
   request.get(options)
     .then((users) => {
-      console.log('Users')
-      let table = new Table({
-        head: ['rowid', 'email', 'name', 'user_role', 'enabled']
-      })
-      users.forEach((user) => {
-        table.push([user.id, user.email, user.name, user.user_role, user.enabled])
-      })
-      console.log(table.toString())
-      console.log(`${users.length} Users`)
+      if (users.length) {
+        console.log('Users')
+        let table = new Table({
+          head: ['rowid', 'email', 'name', 'user_role', 'enabled']
+        })
+        users.forEach((user) => {
+          table.push([user.id, user.email, user.name, user.user_role, user.enabled])
+        })
+        console.log(table.toString())
+        console.log(`${users.length} Users`)
+      } else {
+        console.log('No users registered.')
+      }
     })
     .catch(errorSVC.consoleError)
 }
@@ -156,7 +160,11 @@ if (program.create) {
     .then((token) => {
       if (program.update) {
         let role = program.admin ? 'admin' : program.deployer ? 'deployer' : 'reporter'
-        updateUser(program.id, program.name, role, !program.enabled, token)
+        console.log(`Program.disabled: ${program.disabled}`)
+        console.log(`Program.enabled: ${program.enabled}`)
+        console.log(`!Program.enabled: ${!program.enabled}`)
+        let enabled = (typeof program.disabled === 'undefined' || !program.disabled)
+        updateUser(program.id, program.name, role, enabled, token)
       } else if (program.list) {
         listUsers(token)
       } else if (program.delete) {

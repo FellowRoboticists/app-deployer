@@ -652,7 +652,7 @@ module.exports = (function () {
     LIMIT 1`
 
   const selectLatestUser = async () => {
-    return dbConnAll(selectLatestUserSQL)
+    return dbConnGet(selectLatestUserSQL)
   }
 
   const selectLatestWorkflowSQL = `
@@ -895,8 +895,8 @@ module.exports = (function () {
     WHERE
       rowid = ?`
 
-  const updateUser = async (userId, userParams, enabled) => {
-    return dbConnRun(updateUserSQL, userParams.name, userParams.user_role, enabled, userId)
+  const updateUser = async (userId, userParams) => {
+    return dbConnRun(updateUserSQL, userParams.name, userParams.user_role, userParams.enabled, userId)
   }
 
   const updateWorkflowSQL = `
