@@ -15,7 +15,7 @@ module.exports = (function () {
       rowid = ?`
 
   const changeUserPassword = async (userId, encryptedPassword) => {
-    return dbConnRun(changeUserPasswordSQL, encryptedPassword)
+    return dbConnRun(changeUserPasswordSQL, encryptedPassword, userId)
   }
 
   const createApplicationsTableSQL = `
