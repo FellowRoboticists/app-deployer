@@ -43,10 +43,10 @@ module.exports = (function () {
 
     let release = await sqlSVC.selectLatestApplicationRelease(releaseParams.application_id)
 
-    await deploySVC.saveTarball(uploadedTarball, release.id)
+    await deploySVC.saveTarball(uploadedTarball, application.id, release.id)
 
     if (uploadedSeedfile) {
-      await deploySVC.saveSeedfile(uploadedSeedfile, release.id)
+      await deploySVC.saveSeedfile(uploadedSeedfile, application.id, release.id)
     }
 
     return release
@@ -72,7 +72,7 @@ module.exports = (function () {
 
   const deleteApplicationRelease = async (release) => {
     await sqlSVC.deleteApplicationRelease(release.id)
-    await deploySVC.deleteTarball(release.id)
+    await deploySVC.deleteTarball(release.application_id, release.id)
 
     return release
   }

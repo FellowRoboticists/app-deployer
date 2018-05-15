@@ -581,7 +581,7 @@ module.exports = (function () {
     LIMIT 1`
 
   const selectLatestApplicationRelease = async (appId) => {
-    return dbConnAll(selectLatestApplicationReleaseSQL, appId)
+    return dbConnGet(selectLatestApplicationReleaseSQL, appId)
   }
 
   const selectLatestApplicationRoleSQL = `

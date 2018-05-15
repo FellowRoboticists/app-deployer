@@ -26,26 +26,36 @@ module.exports = (function () {
     return release
   }
 
-  const deleteTarball = async (releaseId) => {
-    let tarballPath = path.join(appDeployConfig.environment.tarballPath, '' + releaseId)
+  const deleteTarball = async (applicationId, releaseId) => {
+    let tarballPath = path.join(
+      appDeployConfig.environment.tarballPath,
+      '' + applicationId,
+      '' + releaseId
+    )
 
     return fs.remove(tarballPath)
   }
 
-  const saveTarball = async (uploadedTarball, releaseId) => {
-    let tarballPath = path.join(appDeployConfig.environment.tarballPath, '' + releaseId, uploadedTarball.originalname)
+  const _tarballParentDir = (applicationId, releaseId) => {
+    return path.join(appDeployConfig.environment.tarballPath, '' + applicationId, '' + releaseId)
+  }
 
-    await fs.ensureDir(path.join(appDeployConfig.environment.tarballPath, '' + releaseId))
+  const saveTarball = async (uploadedTarball, applicationId, releaseId) => {
+    let tarballParent = _tarballParentDir(applicationId, releaseId)
+    let tarballPath = path.join(tarballParent, uploadedTarball.originalname)
+
+    await fs.ensureDir(tarballParent)
     await fs.copy(uploadedTarball.path, tarballPath)
     await fs.remove(uploadedTarball.path)
 
     return tarballPath
   }
 
-  const saveSeedfile = async (uploadedSeedfile, releaseId) => {
-    let seedfilePath = path.join(appDeployConfig.environment.tarballPath, '' + releaseId, uploadedSeedfile.originalname)
+  const saveSeedfile = async (uploadedSeedfile, applicationId, releaseId) => {
+    let tarballParent = _tarballParentDir(applicationId, releaseId)
+    let seedfilePath = path.join(tarballParent, uploadedSeedfile.originalname)
 
-    await fs.ensureDir(path.join(appDeployConfig.environment.tarballPath, '' + releaseId))
+    await fs.ensureDir(tarballParent)
     await fs.copy(uploadedSeedfile.path, seedfilePath)
     await fs.remove(uploadedSeedfile.path)
 
