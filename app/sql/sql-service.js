@@ -671,7 +671,7 @@ module.exports = (function () {
     LIMIT 1`
 
   const selectLatestWorkflow = async () => {
-    return dbConnAll(selectLatestWorkflowSQL)
+    return dbConnGet(selectLatestWorkflowSQL)
   }
 
   const selectUserByEmailSQL = `

@@ -108,15 +108,19 @@ const listWorkflows = (roleId, token) => {
   }
   request.get(options)
     .then((workflows) => {
-      console.log('Workflows')
-      let table = new Table({
-        head: ['rowid', 'role_id', 'playbook', 'sequence', 'enforce_tw', 'pause_after', 'final']
-      })
-      workflows.forEach((workflow) => {
-        table.push([workflow.id, workflow.role_id, workflow.playbook, workflow.sequence, workflow.enforce_tw, workflow.pause_after, workflow.final])
-      })
-      console.log(table.toString())
-      console.log(`${workflows.length} Workflows`)
+      if (workflows.length) {
+        console.log('Workflows')
+        let table = new Table({
+          head: ['rowid', 'role_id', 'playbook', 'sequence', 'enforce_tw', 'pause_after', 'final']
+        })
+        workflows.forEach((workflow) => {
+          table.push([workflow.id, workflow.role_id, workflow.playbook, workflow.sequence, workflow.enforce_tw, workflow.pause_after, workflow.final])
+        })
+        console.log(table.toString())
+        console.log(`${workflows.length} Workflows`)
+      } else {
+        console.log('No workflows defined')
+      }
     })
     .catch(errorSVC.consoleError)
 }
