@@ -2,6 +2,10 @@
 
 module.exports = (function () {
   const dbConn = require('../utility/db').conn()
+  const {promisify} = require('util')
+
+  // Convert dbConn.all to Promise return
+  const dbConnAll = promisify(dbConn.all)
 
   const baseReleaseReport = `
   SELECT
@@ -27,24 +31,16 @@ module.exports = (function () {
     INNER JOIN applications AS app ON app.rowid = rel.application_id
     INNER JOIN roles AS rol ON rol.rowid = role_id`
 
-  const getApplicationReport = (application) => {
-    return new Promise((resolve, reject) => {
-      let sql = baseReleaseReport + ' WHERE app.rowid = ?'
-      dbConn.all(sql, application.id, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows)
-      })
-    })
+  const getApplicationReport = async (application) => {
+    let sql = baseReleaseReport + ' WHERE app.rowid = ?'
+
+    return dbConnAll(sql, application.id)
   }
 
-  const getRoleReport = (role) => {
-    return new Promise((resolve, reject) => {
-      let sql = baseReleaseReport + ' WHERE rol.rowid = ?'
-      dbConn.all(sql, role.id, (err, rows) => {
-        if (err) return reject(err)
-        resolve(rows)
-      })
-    })
+  const getRoleReport = async (role) => {
+    let sql = baseReleaseReport + ' WHERE rol.rowid = ?'
+
+    return dbConnAll(sql, role.id)
   }
 
   var mod = {

@@ -105,15 +105,19 @@ const listReleases = (appId, token) => {
 
   request.get(options)
     .then((releases) => {
-      console.log('Releases')
-      let table = new Table({
-        head: ['rowid', 'application_id', 'version', 'tarball', 'seedfile', 'user_id', 'timestamp', 'created_at']
-      })
-      releases.forEach((release) => {
-        table.push([release.id, release.application_id, release.version, release.tarball, release.seedfile ? release.seedfile : '', release.user_id, release.timestamp, release.created_at])
-      })
-      console.log(table.toString())
-      console.log(`${releases.length} Releases`)
+      if (releases.length) {
+        console.log('Releases')
+        let table = new Table({
+          head: ['rowid', 'application_id', 'version', 'tarball', 'seedfile', 'user_id', 'timestamp', 'created_at']
+        })
+        releases.forEach((release) => {
+          table.push([release.id, release.application_id, release.version, release.tarball, release.seedfile ? release.seedfile : '', release.user_id, release.timestamp, release.created_at])
+        })
+        console.log(table.toString())
+        console.log(`${releases.length} Releases`)
+      } else {
+        console.log(`No releases registered for application ${appId}`)
+      }
     })
     .catch(errorSVC.consoleError)
 }

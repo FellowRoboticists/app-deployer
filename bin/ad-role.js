@@ -17,6 +17,8 @@ program
   .option('-a, --app-id <appid>', 'The id of the application of the role: required')
   .option('-n, --name <name>', 'Specify the name of the new role. Use with --create or --update')
   .option('-s, --server <server>', 'Specify the name of the server for the role. Use with --create or --update')
+  .option('-D, --app-dir <appDir>', 'Specify the name of the application directory')
+  .option('-r, --ruby-name <rubyName>', 'Specify the name of the ruby to use')
   .option('-t, --time-window <window>', 'Specify the time window for the role (if needed)')
   .option('-l, --list', 'List the roles')
   .option('-u, --update', 'Update the role')
@@ -32,9 +34,9 @@ const roleUri = (appId, roleId) => {
   return `${baseUri(appId)}/${roleId}`
 }
 
-const createRole = (appId, name, server, timeWindow, token) => {
-  if (!name || !server) {
-    console.error('Must specify the name and server of the role to create!')
+const createRole = (appId, name, server, timeWindow, appDir, rubyName, token) => {
+  if (!name || !server || !appDir || !rubyName) {
+    console.error('Must specify the name, server, application directory and ruby name of the role to create!')
     process.exit(1)
   }
   let options = {
@@ -44,7 +46,7 @@ const createRole = (appId, name, server, timeWindow, token) => {
     headers: {
       'Authorization': `Bearer ${token}`
     },
-    body: { role: name, active_server: server, time_window: timeWindow }
+    body: { role: name, active_server: server, time_window: timeWindow, appdir: appDir, ruby_name: rubyName }
   }
   request(options)
     .then((role) => {
@@ -53,7 +55,7 @@ const createRole = (appId, name, server, timeWindow, token) => {
     .catch(errorSVC.consoleError)
 }
 
-const updateRole = (appId, id, name, server, timeWindow, token) => {
+const updateRole = (appId, id, name, server, timeWindow, appDir, rubyName, token) => {
   if (!name || !id || !server) {
     console.error('Must specify the information of the role to update!')
     process.exit(1)
@@ -65,13 +67,17 @@ const updateRole = (appId, id, name, server, timeWindow, token) => {
     headers: {
       'Authorization': `Bearer ${token}`
     },
-    body: { application_id: appId, role: name, active_server: server, time_window: timeWindow }
+    body: { application_id: appId, role: name, active_server: server, time_window: timeWindow, appdir: appDir, ruby_name: rubyName }
   }
   request(options)
     .then((role) => {
       console.log(`Updated role: ${role.id} - ${role.application_id}, ${role.role}, ${role.active_server}, ${role.time_window}`)
     })
     .catch(errorSVC.consoleErr)
+}
+
+const _s = (value) => {
+  return value ? value.toString() : ''
 }
 
 const listRoles = (appId, token) => {
@@ -85,15 +91,19 @@ const listRoles = (appId, token) => {
 
   request.get(options)
     .then((roles) => {
-      console.log('Roles')
-      let table = new Table({
-        head: ['rowid', 'application_id', 'role', 'active_server', 'time_window']
-      })
-      roles.forEach((role) => {
-        table.push([role.id, role.application_id, role.role, role.active_server, role.time_window])
-      })
-      console.log(table.toString())
-      console.log(`${roles.length} Roles`)
+      if (roles.length) {
+        console.log('Roles')
+        let table = new Table({
+          head: ['rowid', 'application_id', 'role', 'active_server', 'time_window', 'appdir', 'ruby_name']
+        })
+        roles.forEach((role) => {
+          table.push([_s(role.id), _s(role.application_id), _s(role.role), _s(role.active_server), _s(role.time_window), _s(role.appdir), _s(role.ruby_name)])
+        })
+        console.log(table.toString())
+        console.log(`${roles.length} Roles`)
+      } else {
+        console.log(`No roles defined for Application ${appId}`)
+      }
     })
     .catch(errorSVC.consoleError)
 }
@@ -131,9 +141,9 @@ const readToken = () => {
 readToken()
   .then((token) => {
     if (program.create) {
-      createRole(program.appId, program.name, program.server, program.timeWindow, token)
+      createRole(program.appId, program.name, program.server, program.timeWindow, program.appDir, program.rubyName, token)
     } else if (program.update) {
-      updateRole(program.appId, program.id, program.name, program.server, program.timeWindow, token)
+      updateRole(program.appId, program.id, program.name, program.server, program.timeWindow, program.appDir, program.rubyName, token)
     } else if (program.list) {
       listRoles(program.appId, token)
     } else if (program.delete) {

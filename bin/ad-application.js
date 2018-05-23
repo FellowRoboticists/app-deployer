@@ -85,15 +85,19 @@ const listApplications = (token) => {
   }
   request.get(options)
     .then((applications) => {
-      console.log('Applications')
-      let table = new Table({
-        head: ['rowid', 'name']
-      })
-      applications.forEach((app) => {
-        table.push([app.id, app.name])
-      })
-      console.log(table.toString())
-      console.log(`${applications.length} Applications`)
+      if (applications.length) {
+        console.log('Applications')
+        let table = new Table({
+          head: ['rowid', 'name']
+        })
+        applications.forEach((app) => {
+          table.push([app.id, app.name])
+        })
+        console.log(table.toString())
+        console.log(`${applications.length} Applications`)
+      } else {
+        console.log('No applications defined')
+      }
     })
     .catch(errorSVC.consoleError)
 }

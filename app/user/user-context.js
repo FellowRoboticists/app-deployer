@@ -3,55 +3,54 @@
 module.exports = (function () {
   const bcrypt = require('bcrypt')
   const sqlSVC = require('../sql/sql-service')
+  const {promisify} = require('util')
 
-  const getUsers = () => {
+  const bcryptHash = promisify(bcrypt.hash)
+  const bcryptCompare = promisify(bcrypt.compare)
+
+  const getUsers = async () => {
     return sqlSVC.selectUsers()
   }
 
-  const _cryptPassword = (clearPassword) => {
-    return new Promise((resolve, reject) => {
-      bcrypt.hash(clearPassword, 10, (err, encryptedPassword) => {
-        if (err) return reject(err)
-        resolve(encryptedPassword)
-      })
-    })
+  const _cryptPassword = async (clearPassword) => {
+    return bcryptHash(clearPassword, 10)
   }
 
-  const createUser = (userParams) => {
-    return sqlSVC.selectUserByEmail(userParams.email)
-      .then((user) => {
-        if (user) throw new Error(`User with email '${userParams.email}' already exists.`)
-        return _cryptPassword(userParams.password)
-          .then((encryptedPassword) => sqlSVC.insertUser(userParams, encryptedPassword))
-      })
-      .then(() => sqlSVC.selectLatestUser())
+  const createUser = async (userParams) => {
+    let user = await sqlSVC.selectUserByEmail(userParams.email)
+
+    if (user) throw new Error(`User with email '${userParams.email}' already exists.`)
+
+    let encryptedPassword = await _cryptPassword(userParams.password)
+    await sqlSVC.insertUser(userParams, encryptedPassword)
+
+    return sqlSVC.selectLatestUser()
   }
 
-  const updateUser = (user, userParams) => {
-    return sqlSVC.updateUser(user.id, userParams)
-      .then(() => sqlSVC.selectUserById(user.id))
+  const updateUser = async (user, userParams) => {
+    await sqlSVC.updateUser(user.id, userParams)
+
+    return sqlSVC.selectUserById(user.id)
   }
 
-  const deleteUser = (user) => {
-    return sqlSVC.deleteUser(user.id)
-      .then(() => user)
+  const deleteUser = async (user) => {
+    await sqlSVC.deleteUser(user.id)
+
+    return user
   }
 
-  const _verifyPassword = (password, encryptedPassword) => {
-    return new Promise((resolve, reject) => {
-      bcrypt.compare(password, encryptedPassword, (err, valid) => {
-        if (err) return reject(err)
-        if (!valid) return reject(new Error('Invalid credentials'))
-        resolve()
-      })
-    })
+  const _verifyPassword = async (password, encryptedPassword) => {
+    let valid = await bcryptCompare(password, encryptedPassword)
+
+    if (!valid) throw new Error('Invalid credentials')
   }
 
-  const changeUserPassword = (user, password, newPassword) => {
-    return _verifyPassword(password, user.password)
-      .then(() => _cryptPassword(newPassword))
-      .then((encryptedPassword) => sqlSVC.changeUserPassword(user.id, encryptedPassword))
-      .then(() => user)
+  const changeUserPassword = async (user, password, newPassword) => {
+    await _verifyPassword(password, user.password)
+    let encryptedPassword = await _cryptPassword(newPassword)
+    await sqlSVC.changeUserPassword(user.id, encryptedPassword)
+
+    return user
   }
 
   var mod = {

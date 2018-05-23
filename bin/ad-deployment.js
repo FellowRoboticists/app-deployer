@@ -17,13 +17,13 @@ program
   .option('-r, --role-id <roleId>', 'The id of the role of the deployment: required')
   .option('-e, --release-id <releaseId>', 'The id of the release of the deployment: required')
   .option('-l, --list', 'List the deployments. Specify --role-id or --release-id')
-  .option('-u, --update', 'Update the deployment')
+  // .option('-u, --update', 'Update the deployment')
   .option('-g, --do-deploy', 'Deploy the specified application/version')
   .option('-a, --application <application>', 'The application to deploy')
   .option('-q, --app-version <appVersion>', 'The version of the application to deploy')
   .option('-n, --role <role>', 'The role of the application to which to deploy')
   .option('-s, --status <status>', 'Status for the deployment. Use with --update')
-  .option('-d, --delete', 'Delete a deployment')
+  // .option('-d, --delete', 'Delete a deployment')
   .option('-i, --id <id>', 'Id of the role. Use with --delete and --update')
   .option('-o, --override', 'Create an override token for the specified deployment')
   .option('-t, --time-window <time-window', 'The time window for the override token')
@@ -79,26 +79,26 @@ const createDeployment = (releaseId, roleId, token) => {
     .catch(errorSVC.consoleError)
 }
 
-const updateDeployment = (id, status, token) => {
-  if (!status) {
-    console.error('Must specify the information of the deployment to update!')
-    process.exit(1)
-  }
-  let options = {
-    method: 'PUT',
-    url: deploymentUri(id),
-    json: true,
-    headers: {
-      'Authorization': `Bearer ${token}`
-    },
-    body: { status: status }
-  }
-  request(options)
-    .then((deployment) => {
-      console.log(`Updated deployment: ${deployment.id} - ${deployment.release_id}, ${deployment.role_id}, ${deployment.status}`)
-    })
-    .catch(errorSVC.consoleErr)
-}
+//const updateDeployment = (id, status, token) => {
+  //if (!status) {
+    //console.error('Must specify the information of the deployment to update!')
+    //process.exit(1)
+  //}
+  //let options = {
+    //method: 'PUT',
+    //url: deploymentUri(id),
+    //json: true,
+    //headers: {
+      //'Authorization': `Bearer ${token}`
+    //},
+    //body: { status: status }
+  //}
+  //request(options)
+    //.then((deployment) => {
+      //console.log(`Updated deployment: ${deployment.id} - ${deployment.release_id}, ${deployment.role_id}, ${deployment.status}`)
+    //})
+    //.catch(errorSVC.consoleErr)
+//}
 
 const listDeployments = (releaseId, roleId, token) => {
   if (!(releaseId || roleId)) {
@@ -120,38 +120,42 @@ const listDeployments = (releaseId, roleId, token) => {
 
   request.get(options)
     .then((deployments) => {
-      console.log('Deployments')
-      let table = new Table({
-        head: ['rowid', 'name', 'version', 'role', 'step', 'status', 'message']
-      })
-      deployments.forEach((deployment) => {
-        table.push([deployment.id, deployment.name, deployment.version, deployment.role, deployment.step, deployment.status, deployment.message ? deployment.message : ''])
-      })
-      console.log(table.toString())
-      console.log(`${deployments.length} Deployments`)
+      if (deployments.length) {
+        console.log('Deployments')
+        let table = new Table({
+          head: ['rowid', 'name', 'version', 'role', 'step', 'status', 'message']
+        })
+        deployments.forEach((deployment) => {
+          table.push([deployment.id, deployment.name, deployment.version, deployment.role, deployment.step, deployment.status, deployment.message ? deployment.message : ''])
+        })
+        console.log(table.toString())
+        console.log(`${deployments.length} Deployments`)
+      } else {
+        console.log('No deployments confifgured.')
+      }
     })
     .catch(errorSVC.consoleError)
 }
 
-const deleteDeployment = (id, token) => {
-  if (!id) {
-    console.error('Must specify the id of the deployment to delete!')
-    process.exit(1)
-  }
-  let options = {
-    method: 'DELETE',
-    url: deploymentUri(id),
-    headers: {
-      'Authorization': `Bearer ${token}`
-    },
-    json: true
-  }
-  request(options)
-    .then((deployment) => {
-      console.log(`Deleted deployment: ${deployment.id} - ${deployment.release_id}, ${deployment.role_id}, ${deployment.status}`)
-    })
-    .catch(errorSVC.consoleError)
-}
+//const deleteDeployment = (id, token) => {
+  //if (!id) {
+    //console.error('Must specify the id of the deployment to delete!')
+    //process.exit(1)
+  //}
+  //let options = {
+    //method: 'DELETE',
+    //url: deploymentUri(id),
+    //headers: {
+      //'Authorization': `Bearer ${token}`
+    //},
+    //json: true
+  //}
+  //request(options)
+    //.then((deployment) => {
+      //console.log(`Deleted deployment: ${deployment.id} - ${deployment.release_id}, ${deployment.role_id}, ${deployment.status}`)
+    //})
+    //.catch(errorSVC.consoleError)
+//}
 
 const overrideTimeWindow = (application, appVersion, role, timeWindow, token) => {
   if (!(application && appVersion && role && timeWindow)) {
@@ -188,12 +192,12 @@ readToken()
   .then((token) => {
     if (program.create) {
       createDeployment(program.releaseId, program.roleId, token)
-    } else if (program.update) {
-      updateDeployment(program.id, program.status, token)
+    // } else if (program.update) {
+      // updateDeployment(program.id, program.status, token)
     } else if (program.list) {
       listDeployments(program.releaseId, program.roleId, token)
-    } else if (program.delete) {
-      deleteDeployment(program.id, token)
+    // } else if (program.delete) {
+      // deleteDeployment(program.id, token)
     } else if (program.doDeploy) {
       doDeployment(program.application, program.appVersion, program.role, token)
     } else if (program.override) {

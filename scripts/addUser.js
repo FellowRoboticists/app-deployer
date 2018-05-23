@@ -3,6 +3,9 @@
 
 const program = require('commander')
 const bcrypt = require('bcrypt')
+const {promisify} = require('util')
+
+const bcryptHash = promisify(bcrypt.hash)
 
 require('../bootstrap')
 
@@ -41,25 +44,24 @@ if (!(program.admin || program.deployer || program.reporter)) {
   process.exit(1)
 }
 
-const cryptPassword = (password) => {
-  return new Promise((resolve, reject) => {
-    bcrypt.hash(password, 10, (err, encryptedPassword) => {
-      if (err) return reject(err)
-      resolve(encryptedPassword)
-    })
-  })
+const cryptPassword = async (password) => {
+  return bcryptHash(password, 10)
 }
 
 const userRole = () => program.admin ? 'admin' : program.deployer ? 'deployer' : 'reporter'
 
 const enabled = !program.disabled
 
-sqlSVC.selectUserByEmail(program.email)
-  .then((user) => {
-    if (user) throw new Error(`User with email (${program.email}) already exists.`)
-    return cryptPassword(program.password)
-      .then((encryptedPassword) => sqlSVC.insertUser({ email: program.email, name: program.name, user_role: userRole(), enabled: enabled }, encryptedPassword))
-  })
+async function registerUser (program) {
+  let user = await sqlSVC.selectUserByEmail(program.email)
+
+  if (user) throw new Error(`User with email (${program.email}) already exists.`)
+  let encryptedPassword = await cryptPassword(program.password)
+
+  return sqlSVC.insertUser({ email: program.email, name: program.name, user_role: userRole(), enabled: enabled }, encryptedPassword)
+}
+
+registerUser(program)
   .then(() => {
     console.log(`Successfully added user ${program.email}`)
     process.exit(0)
@@ -68,3 +70,18 @@ sqlSVC.selectUserByEmail(program.email)
     console.error(err.stack || err)
     process.exit(1)
   })
+
+//sqlSVC.selectUserByEmail(program.email)
+  //.then((user) => {
+    //if (user) throw new Error(`User with email (${program.email}) already exists.`)
+    //return cryptPassword(program.password)
+      //.then((encryptedPassword) => sqlSVC.insertUser({ email: program.email, name: program.name, user_role: userRole(), enabled: enabled }, encryptedPassword))
+  //})
+  //.then(() => {
+    //console.log(`Successfully added user ${program.email}`)
+    //process.exit(0)
+  //})
+  //.catch((err) => {
+    //console.error(err.stack || err)
+    //process.exit(1)
+  //})
