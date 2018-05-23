@@ -20,6 +20,8 @@ router.get(
 
 router.post(
   '/',
+  sessionMW.verifyJwtToken,
+  sessionMW.isAuthorized(['admin', 'deployer']),
   function __createDeployment (req, res, next) {
     deployCTX.createDeployment(req.body, req.user_id)
       .then((deploy) => res.json(deploy))

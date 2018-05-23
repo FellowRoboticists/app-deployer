@@ -635,7 +635,7 @@ module.exports = (function () {
     LIMIT 1`
 
   const selectLatestDeployment = async () => {
-    return dbConnAll(selectLatestDeploymentSQL)
+    return dbConnGet(selectLatestDeploymentSQL)
   }
 
   const selectLatestUserSQL = `
